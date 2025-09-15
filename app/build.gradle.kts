@@ -124,4 +124,6 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
     implementation ("androidx.activity:activity-compose:1.8.0")
 
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation ("com.opencsv:opencsv:5.7.1")
 }

@@ -8,7 +8,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class WeatherViewModel(private val repo: WeatherRepository = WeatherRepository()) : ViewModel() {
+class WeatherViewModel(
+    private val repo: WeatherRepository = WeatherRepository()
+) : ViewModel() {
+
     private val _weather = MutableStateFlow<WeatherResponse?>(null)
     val weather: StateFlow<WeatherResponse?> = _weather
 
@@ -26,7 +29,7 @@ class WeatherViewModel(private val repo: WeatherRepository = WeatherRepository()
                 val res = repo.fetchWeather(lat, lon)
                 _weather.value = res
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.message ?: "Error desconocido al obtener clima"
             } finally {
                 _loading.value = false
             }

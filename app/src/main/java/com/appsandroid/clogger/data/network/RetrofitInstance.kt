@@ -4,7 +4,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
-    private const val BASE_URL = "https:// ESTABLECER LA URL DE LA API"
+    private const val BASE_URL = "https://api-de-conexion-con-postgresql-1.onrender.com"
 
     val api: ApiService by lazy {
         Retrofit.Builder()

@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
+
 @Composable
 fun SplashGate(onReady: (Boolean) -> Unit) {
     val context = LocalContext.current
