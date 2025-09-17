@@ -19,3 +19,19 @@ import kotlinx.coroutines.flow.StateFlow
         _loginSuccess.value = false
     }
 }*/
+
+class LoginViewModel : ViewModel() {
+    private val _loginSuccess = MutableStateFlow(false)
+    val loginSuccess: StateFlow<Boolean> = _loginSuccess
+
+    private val staticUser = "."
+    private val staticPass = "."
+
+    fun login(email: String, password: String) {
+        _loginSuccess.value = (email == staticUser && password == staticPass)
+    }
+
+    fun resetLogin() {
+        _loginSuccess.value = false
+    }
+}

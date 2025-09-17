@@ -1,5 +1,9 @@
 package com.appsandroid.clogger.data.model
 
+import android.icu.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 data class WeatherResponse(
     val current_weather: CurrentWeather?,
     val hourly: HourlyResponse?,
@@ -32,4 +36,10 @@ data class DailyResponse(
     val sunrise: List<String>?,                 // salida del sol
     val sunset: List<String>?,                  // puesta del sol
     val windspeed_10m_max: List<Double>?        // viento máximo diario
+)
+
+data class WeatherNotification(
+    val title: String,
+    val message: String,
+    val time: String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 )
