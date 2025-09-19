@@ -80,50 +80,102 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Compose Navigation
+// ==========================================================================================
+//   Compose & UI
+// ==========================================================================================
+// Navegación en Jetpack Compose
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // ViewModel para Compose
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1")
+// ViewModel para Jetpack Compose (gestión de estado)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2") // versión más reciente que tenías
 
-    // Iconos extendidos Material
+// ViewModel estándar con soporte de KTX
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
+
+// Lifecycle Runtime (para observación de ciclos de vida)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+
+// Actividad Compose
+    implementation("androidx.activity:activity-compose:1.8.0")
+
+// Iconos extendidos de Material Design
     implementation("androidx.compose.material:material-icons-extended:1.3.0")
 
-    // Retrofit + Gson
+// Material3 Placeholder Shimmer (efecto visual mientras carga contenido)
+    implementation("com.google.accompanist:accompanist-placeholder-material:0.32.0")
+
+// Carrusel / Pager Animations
+    implementation("com.google.accompanist:accompanist-pager:0.36.0")
+
+// Indicadores para HorizontalPager
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.36.0")
+
+// ==========================================================================================
+// Redes & API
+// ==========================================================================================
+
+// Retrofit para consumir APIs REST
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
+
+// Conversor Gson para Retrofit (JSON <-> Objetos)
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
-    // MPAndroidChart
+// OkHttp cliente HTTP para Retrofit u otras peticiones
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+
+// ==========================================================================================
+// Persistencia & Preferences
+// ==========================================================================================
+
+// DataStore Preferences (almacenamiento clave-valor)
+    implementation("androidx.datastore:datastore-preferences:1.1.0")
+
+// ==========================================================================================
+// Concurrencia
+// ==========================================================================================
+
+// Coroutines para operaciones asíncronas en Android
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+// ==========================================================================================
+// Notificaciones
+// ==========================================================================================
+
+// Firebase Cloud Messaging (push notifications)
+    implementation("com.google.firebase:firebase-messaging-ktx:23.2.0")
+
+// ==========================================================================================
+// Gráficos
+// ==========================================================================================
+
+// MPAndroidChart (gráficos de barras, líneas, pastel, etc.)
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
-    // OSMDroid para generar graficos satelitales
-    implementation ("org.osmdroid:osmdroid-android:6.1.16")
-    implementation ("org.osmdroid:osmdroid-wms:6.1.16") //para capas extra tipo meteorología
+// OSMDroid (mapas y gráficos satelitales)
+    implementation("org.osmdroid:osmdroid-android:6.1.16")
 
-    // Itex 7 Para generar PDFs
-    implementation ("com.itextpdf:itext7-core:8.0.3")
+// Capas WMS adicionales (por ejemplo meteorología sobre mapas)
+    implementation("org.osmdroid:osmdroid-wms:6.1.16")
 
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
+// ==========================================================================================
+// PDF
+// ==========================================================================================
 
-    // Compose / Material3 ya los tienes; añade estas dependencias
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")// o la versión que uses
-    implementation ("com.google.firebase:firebase-messaging-ktx:23.2.0")
+// iText7 para generación de PDFs
+    implementation("com.itextpdf:itext7-core:8.0.3")
 
-    // Libreria para cargar placeholders con efecto shimmer
-    implementation ("com.google.accompanist:accompanist-placeholder-material:0.32.0")
+// ==========================================================================================
+// Archivos CSV
+// ==========================================================================================
 
-    // Lib para animaciones de el carrusel
-    implementation ("com.google.accompanist:accompanist-pager:0.28.0")
+// OpenCSV para leer/escribir archivos CSV
+    implementation("com.opencsv:opencsv:5.7.1")
 
-    // Indicadores (aquí está HorizontalPagerIndicator)
-    implementation ("com.google.accompanist:accompanist-pager:0.36.0")
-    implementation ("com.google.accompanist:accompanist-pager-indicators:0.36.0")
+// ==========================================================================================
+// Tareas en segundo plano
+// ==========================================================================================
 
-    implementation ("androidx.work:work-runtime-ktx:2.8.1")
-
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
-    implementation ("androidx.activity:activity-compose:1.8.0")
-
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
-    implementation ("com.opencsv:opencsv:5.7.1")
+// WorkManager para tareas programadas o periódicas
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
 }
+// ==========================================================================================

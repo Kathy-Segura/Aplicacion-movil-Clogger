@@ -154,65 +154,34 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-sealed class BottomNavItem(
-    val route: String,
-    val title: String,
-    @DrawableRes val icon: Int
-) {
-    object Home : BottomNavItem("home", "Inicio", R.drawable.baseline_home_24)
-    object Clima : BottomNavItem("clima", "Clima", R.drawable.baseline_cloudy_snowing_24)
-    object Mapas : BottomNavItem("mapas", "Mapas", R.drawable.baseline_map_24)
-    object Graficos : BottomNavItem("graficos", "Gráficos", R.drawable.baseline_analytics_24)
-    object Reportes : BottomNavItem("reportes", "Reportes", R.drawable.baseline_edit_document_24)
 
-    companion object {
-        val items = listOf(Home, Clima, Mapas, Graficos, Reportes)
-    }
-}
+//Funcion que no sirve supuestamente unifica la navegacion pero no
+/*class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            val navController = rememberNavController()
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-@Composable
-fun BottomNavBar(
-    navController: NavController,
-    topBarState: MutableState<TopBarScreen?> // <- obligatorio ahora
-) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    NavigationBar(containerColor = Color.White) {
-        BottomNavItem.items.forEach { item ->
-            NavigationBarItem(
-                selected = currentRoute == item.route,
-                onClick = {
-                    topBarState.value = null // cierra cualquier TopBar
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                icon = {
-                    Icon(
-                        painter = painterResource(id = item.icon),
-                        contentDescription = item.title,
-                        tint = if (currentRoute == item.route) Color(0xFF2D9DFB) else Color.Gray
-                    )
-                },
-                label = {
-                    Text(
-                        item.title,
-                        color = if (currentRoute == item.route) Color(0xFF2D9DFB) else Color.Gray
+            NavHost(
+                navController = navController,
+                startDestination = "login"
+            ) {
+                composable("login") {
+                    LoginScreen(
+                        onLoginSuccess = { navController.navigate("mainFlow") },
+                        onRegisterClick = { navController.navigate("register") }
                     )
                 }
-            )
+                composable("register") { RegisterScreen(onLoginClick = { navController.popBackStack() }) }
+
+
+               // RegisterScreen(onLoginClick = { navController.navigate("login") })
+
+                composable("mainFlow") { MainFlowScreen() }
+            }
         }
     }
-}
-
-////////////////////////////////////////////////////////////////
-
+}*/
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -42,7 +44,13 @@ import androidx.compose.ui.unit.sp
 import com.appsandroid.clogger.R
 //import com.appsandroid.clogger.viewmodel.LoginViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appsandroid.clogger.api.RetrofitInstance
+import com.appsandroid.clogger.data.repository.UserRepository
+import com.appsandroid.clogger.utils.LoginViewModelFactory
 import com.appsandroid.clogger.viewmodel.LoginViewModel
+import com.appsandroid.clogger.viewmodel.RegisterViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /*@Composable
 fun LoginScreen(
@@ -194,8 +202,7 @@ fun LoginScreen(
     }
 }*/
 
-
-@Composable
+/*@Composable
 fun LoginScreen(
     viewModel: LoginViewModel = viewModel(),
     onLoginSuccess: () -> Unit,
@@ -352,5 +359,153 @@ fun LoginScreen(
         TextButton(onClick = onRegisterClick) {
             Text("Don't have an account? Sign Up", color = Color(0xFF2D9DFB))
         }
+    }
+}
+*/
+
+@Composable
+fun LoginScreen(
+    onLoginSuccess: () -> Unit,
+    onRegisterClick: () -> Unit,
+    viewModel: LoginViewModel = viewModel(
+        factory = LoginViewModelFactory(
+            UserRepository(
+                RetrofitInstance.api,
+                SessionManager(LocalContext.current)
+            )
+        )
+    )
+) {
+    val loginInput by viewModel.loginInput.collectAsState()
+    val password by viewModel.password.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val loginSuccess by viewModel.loginSuccess.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    /*LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            onLoginSuccess()
+        }
+    }*/
+
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            onLoginSuccess()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.account),
+            contentDescription = null,
+            modifier = Modifier.size(180.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            "Bienvenido!",
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color(0xFF2D9DFB)
+        )
+        Text(
+            "Inicia sesión en tu cuenta",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = loginInput,
+            onValueChange = { viewModel.onLoginInputChange(it) },
+            label = { Text("Usuario o Correo", color = Color(0xFF2D9DFB)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            isError = errorMessage != null,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF2D9DFB),
+                unfocusedBorderColor = Color(0xFF2D9DFB),
+                cursorColor = Color(0xFF2D9DFB),
+                focusedLabelColor = Color(0xFF2D9DFB),
+                unfocusedLabelColor = Color(0xFF2D9DFB),
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        var passwordVisible by remember { mutableStateOf(false) }
+        OutlinedTextField(
+            value = password,
+            onValueChange = { viewModel.onPasswordChange(it) },
+            label = { Text("Contraseña", color = Color(0xFF2D9DFB)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible) {
+                    painterResource(id = R.drawable.ic_visibility)
+                } else {
+                    painterResource(id = R.drawable.ic_visibility_off)
+                }
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(painter = image, contentDescription = "Ver contraseña", tint = Color(0xFF2D9DFB))
+                }
+            },
+            isError = errorMessage != null,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF2D9DFB),
+                unfocusedBorderColor = Color(0xFF2D9DFB),
+                cursorColor = Color(0xFF2D9DFB),
+                focusedLabelColor = Color(0xFF2D9DFB),
+                unfocusedLabelColor = Color(0xFF2D9DFB),
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
+        )
+
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(errorMessage ?: "", color = Color.Red, fontSize = 14.sp)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = { viewModel.login() },
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            enabled = !isLoading,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D9DFB))
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Text("Login", color = Color.White)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextButton(onClick = onRegisterClick) {
+            Text("¿No tienes cuenta? Regístrate", color = Color(0xFF2D9DFB))
+        }
+    }
+}
+
+fun getFriendlyErrorMessage(exception: Throwable?): String {
+    return when (exception?.message) {
+        "HTTP 401" -> "Usuario o contraseña incorrectos"
+        "HTTP 403" -> "Acceso denegado"
+        "HTTP 500" -> "Error del servidor, intenta más tarde"
+        else -> exception?.message ?: "Error desconocido"
     }
 }
