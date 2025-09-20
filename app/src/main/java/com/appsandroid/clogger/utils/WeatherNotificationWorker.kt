@@ -163,23 +163,38 @@ class WeatherNotificationWorker(
 ) : CoroutineWorker(context, params) {
 
     private val channelId = "weather_notifications"
-    private val notificationId = 1001
 
+    @SuppressLint("MissingPermission")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val lat = inputData.getDouble("lat", 0.0)
-            val lon = inputData.getDouble("lon", 0.0)
+            val fused = LocationServices.getFusedLocationProviderClient(applicationContext)
+            val location = try {
+                fused.lastLocation.await()
+            } catch (_: Exception) {
+                null
+            }
 
-            if (lat == 0.0 || lon == 0.0) return@withContext Result.failure()
+            val lat = location?.latitude ?: 12.1364
+            val lon = location?.longitude ?: -86.2514
 
-            // Llamada a Open-Meteo usando Retrofit
             val response = RetroWheather.api.getWeather(lat, lon)
 
-            val weatherCode = response.current_weather?.weathercode ?: 0
-            val message = getWeatherMessage(weatherCode)
+            val current = response.current_weather
+            val humidity = response.hourly?.relativehumidity_2m?.firstOrNull()
+            val rain = response.hourly?.precipitation?.firstOrNull()
+            val wind = current?.windspeed ?: 0.0
 
-            // Enviamos notificación local
-            sendNotification(message)
+            val message = buildString {
+                append("🌡 ${current?.temperature ?: "--"}°C")
+                append(" | 💧 ${humidity ?: "--"}%")
+                append(" | 🌬 ${"%.1f".format(wind)} km/h")
+                if ((rain ?: 0.0) > 0.2) append(" | 🌧 Lluvia esperada")
+            }
+
+            val type = inputData.getString("notificationType") ?: "weather"
+            val notifId = inputData.getInt("notificationId", 1000)
+
+            sendNotification("Clogger - Clima $type", message, notifId)
 
             Result.success()
         } catch (e: Exception) {
@@ -188,24 +203,13 @@ class WeatherNotificationWorker(
         }
     }
 
-    private fun getWeatherMessage(weatherCode: Int): String {
-        return when (weatherCode) {
-            0 -> "☀️ Soleado"
-            1,2 -> "🌤️ Parcialmente nublado"
-            3 -> "☁️ Nublado"
-            in 45..48 -> "🌫️ Neblina"
-            in 51..67 -> "🌧️ Lluvia ligera"
-            in 71..77 -> "❄️ Nieve"
-            in 95..99 -> "⛈️ Tormenta"
-            else -> "ℹ️ Clima no disponible"
-        }
-    }
 
-    private fun sendNotification(message: String) {
+    private fun sendNotification(title: String, message: String, id: Int) {
+        sendWeatherNotification(applicationContext, title, message, id)
+
         val notificationManager =
             applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Crear canal en Android 8+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
@@ -215,14 +219,24 @@ class WeatherNotificationWorker(
             notificationManager.createNotificationChannel(channel)
         }
 
+        val intent = Intent(applicationContext, MainActivity::class.java)
+        val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, pendingFlags)
+
         val notification = NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle("Clogger - Clima Actual")
+            .setContentTitle(title)
             .setContentText(message)
             .setSmallIcon(R.drawable.baseline_add_alert_24)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .build()
 
-        notificationManager.notify(notificationId, notification)
+        notificationManager.notify(id, notification)
     }
 }
-

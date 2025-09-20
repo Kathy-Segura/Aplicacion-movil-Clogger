@@ -1,6 +1,8 @@
 package com.appsandroid.clogger.ui.theme.screen
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -44,6 +47,8 @@ import com.appsandroid.clogger.login.LoginScreen
 import com.appsandroid.clogger.login.RegisterScreen
 import com.appsandroid.clogger.utils.NotificationScheduler
 import com.appsandroid.clogger.viewmodel.ArchivosViewModel
+import com.appsandroid.clogger.viewmodel.NotificationViewModel
+import com.appsandroid.clogger.viewmodel.NotificationViewModelFactory
 import com.appsandroid.clogger.viewmodel.WeatherViewModel
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.tasks.await
@@ -178,11 +183,45 @@ fun MainFlowScreen() {
                             //.background(Color(0xAA000000)) // fondo semi-transparente
                             .clickable { topBarState.value = null } // cierra al tocar fuera
                     ) {
-                        when (screen) {
+                        /*when (screen) {
                             TopBarScreen.Notificaciones -> NotificationScreen(
                                 navController = bottomNavController,
-                                viewModel = weatherViewModel
+                                viewModel = NotificationViewModel(context)
                                 )
+                            TopBarScreen.Archivos -> ArchivosScreen(
+                                navController = bottomNavController,
+                                archivosViewModel = archivosViewModel
+                            )
+                        }*/
+
+                        when (screen) {
+                            TopBarScreen.Notificaciones -> {
+                                val context = LocalContext.current
+                                // Crear ViewModel usando Factory
+                                val notificationViewModel: NotificationViewModel = viewModel(
+                                    factory = NotificationViewModelFactory(context)
+                                )
+
+                                // Obtener ubicación y llamar fetchWeather dinámicamente
+                                val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+                                LaunchedEffect(Unit) {
+                                    if (ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        val location = fusedLocationClient.lastLocation.await()
+                                        if (location != null) {
+                                            notificationViewModel.fetchWeather(location.latitude, location.longitude)
+                                        }
+                                    }
+                                }
+
+                                NotificationScreen(
+                                    navController = bottomNavController,
+                                    viewModel = notificationViewModel
+                                )
+                            }
                             TopBarScreen.Archivos -> ArchivosScreen(
                                 navController = bottomNavController,
                                 archivosViewModel = archivosViewModel
@@ -198,137 +237,7 @@ fun MainFlowScreen() {
 enum class TopBarScreen { Notificaciones, Archivos }
 
 
-/*@SuppressLint("MissingPermission")
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MainFlowScreen() {
-    val context = LocalContext.current
-    val navController = rememberNavController()
-    val topBarState = remember { mutableStateOf<TopBarScreen?>(null) }
-    var isLoggedIn by remember { mutableStateOf(false) }
-    var latitude by remember { mutableStateOf<Double?>(null) }
-    var longitude by remember { mutableStateOf<Double?>(null) }
 
-    // ViewModels
-    val weatherViewModel: WeatherViewModel = viewModel()
-    val archivosViewModel: ArchivosViewModel = viewModel()
-
-    // Ubicación
-    LaunchedEffect(Unit) {
-        try {
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-            val location = fusedLocationClient.lastLocation.await()
-            latitude = location?.latitude
-            longitude = location?.longitude
-        } catch (_: Exception) { }
-    }
-
-    // Llamada al clima
-    LaunchedEffect(latitude, longitude) {
-        if (latitude != null && longitude != null) {
-            weatherViewModel.fetchWeather(latitude!!, longitude!!)
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            if (isLoggedIn) {
-                CenterAlignedTopAppBar(
-                    title = { Text("Clogger", color = Color.White, fontWeight = FontWeight.Bold) },
-                    actions = {
-                        IconButton(onClick = {
-                            topBarState.value = if (topBarState.value == TopBarScreen.Notificaciones) null
-                            else TopBarScreen.Notificaciones
-                        }) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(id = R.drawable.baseline_add_alert_24),
-                                contentDescription = "Notificaciones",
-                                tint = Color.White
-                            )
-                        }
-                        IconButton(onClick = {
-                            topBarState.value = if (topBarState.value == TopBarScreen.Archivos) null
-                            else TopBarScreen.Archivos
-                        }) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(id = R.drawable.baseline_library_books_24),
-                                contentDescription = "Archivos",
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent
-                    ),
-                    modifier = Modifier.background(
-                        brush = Brush.linearGradient(listOf(Color(0xFF2D9DFB), Color(0xFF3DDC97)))
-                    )
-                )
-            }
-        },
-        bottomBar = {
-            if (isLoggedIn) BottomNavBar(navController = navController, topBarState = topBarState)
-        },
-        containerColor = Color.White
-    ) { innerPadding ->
-        Box(Modifier.padding(innerPadding)) {
-            // Un solo NavHost
-            NavHost(
-                navController = navController,
-                startDestination = if (isLoggedIn) BottomNavItem.Home.route else "login"
-            ) {
-                // Login y registro
-                composable("login") {
-                    LoginScreen(
-                        onLoginSuccess = {
-                            isLoggedIn = true
-                            navController.navigate(BottomNavItem.Home.route) {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        },
-                        onRegisterClick = { navController.navigate("register") }
-                    )
-                }
-                composable("register") {
-                    RegisterScreen(
-                        onLoginClick = { navController.navigate("login") }
-                    )
-                }
-
-                // Pantallas BottomNav
-                composable(BottomNavItem.Home.route) { HomeScreen() }
-                composable(BottomNavItem.Clima.route) { ClimaScreen() }
-                composable(BottomNavItem.Graficos.route) { GraficosScreen() }
-                composable(BottomNavItem.Reportes.route) { ReportesScreen() }
-                composable(BottomNavItem.Mapas.route) { MapasScreen() }
-            }
-
-            // Overlay TopBar
-            topBarState.value?.let { screen ->
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color.White)
-                        .clickable { topBarState.value = null }
-                ) {
-                    when (screen) {
-                        TopBarScreen.Notificaciones -> NotificationScreen(
-                            navController = navController,
-                            viewModel = weatherViewModel
-                        )
-                        TopBarScreen.Archivos -> ArchivosScreen(
-                            navController = navController,
-                            archivosViewModel = archivosViewModel
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-enum class TopBarScreen { Notificaciones, Archivos }*/
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

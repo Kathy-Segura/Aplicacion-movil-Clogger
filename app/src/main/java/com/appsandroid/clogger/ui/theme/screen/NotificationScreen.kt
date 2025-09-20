@@ -16,16 +16,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,10 +48,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.NavHostController
 import com.appsandroid.clogger.viewmodel.WeatherViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,96 +65,99 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 import com.appsandroid.clogger.data.network.WeatherApi
+import com.appsandroid.clogger.viewmodel.NotificationViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
     navController: NavHostController,
-    viewModel: WeatherViewModel
+    viewModel: NotificationViewModel
 ) {
-    // Estado local de notificaciones (simula las que envía WorkManager)
-    val notifications = remember { mutableStateListOf<WeatherNotification>() }
+    // Estado local de notificaciones
+    val notifications by viewModel.notifications.collectAsState()
 
     // Observar el clima actual
     val weather by viewModel.weather.collectAsState()
     val current = weather?.current_weather
     val hourly = weather?.hourly
-    val daily = weather?.daily
 
-    // Lógica para generar notificación de lluvia automáticamente en pantalla (simulada)
-    LaunchedEffect(current, hourly, daily) {
-        if (hourly != null) {
-            val rainNext6h = hourly.precipitation?.take(6)?.sum() ?: 0.0
-            if (rainNext6h > 0.5) {
-                val msg = "Se esperan ${"%.1f".format(rainNext6h)}mm de lluvia en las próximas horas."
-                // Evita duplicados
-                if (notifications.none { it.message == msg }) {
-                    notifications.add(WeatherNotification("Alerta de lluvia", msg))
+    // Banner superior
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Notificaciones") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF8F6FA))
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            // Banner superior de centro de notificaciones
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEBDDF8)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                elevation = CardDefaults.cardElevation(6.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_add_alert_24),
+                        contentDescription = "Notificaciones",
+                        tint = Color(0xFF7E57C2),
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        "Centro de Notificaciones",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = Color(0xFF4A148C)
+                    )
                 }
             }
-        }
 
-        // Clima actual
-        /*current?.let {
-            val description = getWeatherDescription(it.weathercode)
-            val msg = "Clima actual: $description, ${it.temperature}°C"
-            if (notifications.none { n -> n.message == msg }) {
-                notifications.add(WeatherNotification("Clima", msg))
-            }
-        }*/
+            Spacer(modifier = Modifier.height(12.dp))
 
-        // Clima actual (usamos current_weather como fuente oficial)
-        current?.let {
-            val description = getWeatherDescription(it.weathercode)
-            val msg = "Clima actual: $description\n🌡️ ${it.temperature}°C\n💨 ${it.windspeed} km/h"
-            if (notifications.none { n -> n.message == msg }) {
-                notifications.add(WeatherNotification("Clima", msg))
-            }
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Notificaciones", fontWeight = FontWeight.Bold, fontSize = 22.sp)
-            Button(onClick = { notifications.clear() }) {
-                Text("Limpiar")
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        //  Aquí agregamos el botón de prueba de notificaciones
-        TestWeatherNotificationButton(
-            context = LocalContext.current,
-            viewModel = viewModel
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        if (notifications.isEmpty()) {
-            Text("No hay notificaciones disponibles.", color = Color.Gray)
-        } else {
-            LazyColumn {
-                items(notifications) { notif ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(notif.title, fontWeight = FontWeight.Bold)
-                            Spacer(Modifier.height(4.dp))
-                            Text(notif.message)
-                            Spacer(Modifier.height(2.dp))
-                            Text(notif.time, fontSize = 12.sp, color = Color.Gray)
+            if (notifications.isEmpty()) {
+                Text(
+                    "No hay notificaciones disponibles.",
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            } else {
+                LazyColumn {
+                    items(notifications) { notif ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            elevation = CardDefaults.cardElevation(4.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(notif.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Spacer(Modifier.height(6.dp))
+                                Text(notif.message, fontSize = 14.sp)
+                                Spacer(Modifier.height(6.dp))
+                                Text(notif.time, fontSize = 12.sp, color = Color.Gray)
+                            }
                         }
                     }
                 }
@@ -150,7 +166,9 @@ fun NotificationScreen(
     }
 }
 
-// Función para traducir weathercode a texto
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 🔹 Traducción de weathercode
 fun getWeatherDescription(code: Int?): String {
     return when (code) {
         0 -> "☀️ Soleado"
@@ -171,94 +189,60 @@ fun getWeatherDescription(code: Int?): String {
     }
 }
 
-//FUNCION PARA PROBAR LAS NOTIFICACION BORRAR LUEGO
 
-/*@Composable
-fun TestNotificationButton(context: Context) {
-    val channelId = "weather_notifications"
-    val notificationId = 9999 // un id distinto para pruebas
-
-    Button(onClick = {
-        // Crear canal (Android 8+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Notificaciones de Clima",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        // Construir notificación
-        val notification = NotificationCompat.Builder(context, channelId)
-            .setContentTitle("🌤️ Notificación de prueba")
-            .setContentText("Esta es una notificación instantánea para test.")
-            .setSmallIcon(R.drawable.baseline_add_alert_24)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
-
-        // Mostrar notificación
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(notificationId, notification)
-    }) {
-        com.itextpdf.layout.element.Text("Probar Notificación")
-    }
-}*/
-
+////////////////////////////////////////////////////////////////////////////////
 @Composable
 fun TestWeatherNotificationButton(
     context: Context,
-    viewModel: WeatherViewModel
+    viewModel: NotificationViewModel
 ) {
     val weather by viewModel.weather.collectAsState()
     val scope = rememberCoroutineScope()
 
-    Button(onClick = {
-        scope.launch {
-            try {
-                val current = weather?.current_weather
+    Button(
+        onClick = {
+            scope.launch {
+                try {
+                    val current = weather?.current_weather
+                    if (current != null) {
+                        val description = getWeatherDescription(current.weathercode)
+                        val message =
+                            "$description\n🌡️ ${current.temperature}°C\n💨 ${current.windspeed} km/h"
 
-                if (current != null) {
-                    val description = getWeatherDescription(current.weathercode)
-                    val message =
-                        "$description\n🌡️ ${current.temperature}°C\n💨 ${current.windspeed} km/h"
+                        val channelId = "weather_notifications"
+                        val notificationId = 9999
 
-                    val channelId = "weather_notifications"
-                    val notificationId = 9999
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            val channel = NotificationChannel(
+                                channelId,
+                                "Notificaciones de Clima",
+                                NotificationManager.IMPORTANCE_HIGH
+                            )
+                            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                            manager.createNotificationChannel(channel)
+                        }
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val channel = NotificationChannel(
-                            channelId,
-                            "Notificaciones de Clima",
-                            NotificationManager.IMPORTANCE_HIGH
-                        )
+                        val notification = NotificationCompat.Builder(context, channelId)
+                            .setContentTitle("Clima actual")
+                            .setContentText(message)
+                            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                            .setSmallIcon(R.drawable.baseline_add_alert_24)
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .build()
+
                         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                        manager.createNotificationChannel(channel)
+                        manager.notify(notificationId, notification)
+                    } else {
+                        Toast.makeText(context, "No se pudo obtener el clima actual", Toast.LENGTH_SHORT).show()
                     }
-
-                    val notification = NotificationCompat.Builder(context, channelId)
-                        .setContentTitle("Clima actual")
-                        .setContentText(message)
-                        .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-                        .setSmallIcon(R.drawable.baseline_add_alert_24)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .build()
-
-                    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    manager.notify(notificationId, notification)
-                } else {
-                    Toast.makeText(context, "No se pudo obtener el clima actual", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(context, "Error obteniendo datos del clima", Toast.LENGTH_SHORT).show()
                 }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(context, "Error obteniendo datos del clima", Toast.LENGTH_SHORT).show()
             }
-        }
-    }) {
-        Text("Probar Notificación con Clima")
+        },
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9575CD))
+    ) {
+        Text(" Probar Notificación con Clima", color = Color.White)
     }
 }

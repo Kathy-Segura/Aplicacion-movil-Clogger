@@ -18,53 +18,39 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-
 class RainAlertWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
     private val channelId = "weather_alerts"
-    private val notificationId = 1002
+    private val notificationId = 2001
 
     @SuppressLint("MissingPermission")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            // Se intenta obtener la ubicación. Si no se puede, se usa un fallback.
-            var lat: Double
-            var lon: Double
-            try {
-                val fused = LocationServices.getFusedLocationProviderClient(applicationContext)
-                val location = fused.lastLocation.await()
-                if (location != null) {
-                    lat = location.latitude
-                    lon = location.longitude
-                } else {
-                    lat = 12.1364
-                    lon = -86.2514
-                }
+            val fused = LocationServices.getFusedLocationProviderClient(applicationContext)
+            val location = try {
+                fused.lastLocation.await()
             } catch (_: Exception) {
-                lat = 12.1364
-                lon = -86.2514
+                null
             }
 
-            // Llamada a la API para obtener datos horarios de precipitación
+            val lat = location?.latitude ?: 12.1364
+            val lon = location?.longitude ?: -86.2514
+
             val response = RetroWheather.api.getWeather(lat, lon, "hourly=precipitation")
             val hourlyPrecipitation = response.hourly?.precipitation ?: emptyList()
 
-            // Define el umbral de precipitación y el número de horas a revisar
-            val rainThreshold = 0.5 // mm, por ejemplo.
-            val checkHours = 6 // Revisa las próximas 6 horas
+            val rainThreshold = 3.0 // mm en próximas 6h
+            val checkHours = 6
+            val totalRain = hourlyPrecipitation.take(checkHours).sum()
 
-            var totalRain = 0.0
-            for (i in 0 until minOf(checkHours, hourlyPrecipitation.size)) {
-                totalRain += hourlyPrecipitation[i]
-            }
-
-            // Si se espera una cantidad de lluvia significativa, envía la notificación
             if (totalRain > rainThreshold) {
-                val message = "Se acercan lluvias en las próximas horas, se esperan ${"%.1f".format(totalRain)}mm de lluvia."
-                sendNotification("Alerta de lluvia", message)
+                val message = "⚠️ Lluvias fuertes en las próximas horas: ${"%.1f".format(totalRain)} mm"
+                //sendNotification("Alerta de lluvia", message)
+                sendWeatherNotification(applicationContext, "Alerta de lluvia", message, notificationId)
+
             }
 
             Result.success()
@@ -78,7 +64,6 @@ class RainAlertWorker(
         val notificationManager =
             applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Crear canal en Android 8+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
@@ -88,7 +73,6 @@ class RainAlertWorker(
             notificationManager.createNotificationChannel(channel)
         }
 
-        // PendingIntent para abrir la app
         val intent = Intent(applicationContext, MainActivity::class.java)
         val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -104,9 +88,10 @@ class RainAlertWorker(
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message)) // Para mostrar el mensaje completo
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .build()
 
         notificationManager.notify(notificationId, notification)
     }
 }
+

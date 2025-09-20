@@ -84,9 +84,13 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import android.Manifest
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.location.LocationManagerCompat.getCurrentLocation
+import com.appsandroid.clogger.viewmodel.NotificationViewModel
+import com.appsandroid.clogger.viewmodel.NotificationViewModelFactory
 import kotlinx.coroutines.tasks.await
 
 /*class MainActivity : ComponentActivity() {
@@ -162,8 +166,8 @@ import kotlinx.coroutines.tasks.await
     }
 }*/
 
-
-class MainActivity : ComponentActivity() {
+//bastante funcional
+/*class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
@@ -176,22 +180,24 @@ class MainActivity : ComponentActivity() {
         // Inicializar FusedLocationProviderClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        // Aquí se obtiene la ubicación dinámicamente al abrir la app
+        lifecycleScope.launch {
+            val location = getCurrentLocation(this@MainActivity)
+            if (location != null) {
+                Log.d("LOCATION", "Lat: ${location.latitude}, Lng: ${location.longitude}")
+            } else {
+                Log.d("LOCATION", "No se pudo obtener la ubicación")
+            }
+        }// cualquier crash en la navegacion borrar este codigo
+
         setContent {
             CloggerTheme {
                 val navController = rememberNavController()
                 val context = LocalContext.current
 
-                // Controla solo el inicio de notificaciones y ubicación
+                // Inicia la programación de notificaciones (ya no requiere lat/lon)
                 LaunchedEffect(Unit) {
-                    val location = getCurrentLocation(context)
-                    val latitude = location?.latitude ?: 12.1364
-                    val longitude = location?.longitude ?: -86.2514
-
-                    NotificationScheduler.scheduleDailyNotifications(
-                        context,
-                        latitude,
-                        longitude
-                    )
+                    NotificationScheduler.scheduleDailyNotifications(context)
                 }
 
                 // Mantener navegación usando NavController
@@ -225,6 +231,15 @@ class MainActivity : ComponentActivity() {
                     composable("main") {
                         MainFlowScreen()
                     }
+
+                    //  Pantalla de notificaciones global
+                    composable("notifications") {
+                        val notificationViewModel: NotificationViewModel = viewModel()
+                        NotificationScreen(
+                            navController = navController, //  usamos el global
+                            viewModel = notificationViewModel
+                        )
+                    }
                 }
             }
         }
@@ -235,6 +250,113 @@ class MainActivity : ComponentActivity() {
         return try {
             if (ContextCompat.checkSelfPermission(
                     context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                fusedLocationClient.lastLocation.await()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+}*/
+class MainActivity : ComponentActivity() {
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Pedir permiso de notificaciones
+        NotificationPermissionHelper.requestNotificationPermission(this)
+
+        // Inicializar FusedLocationProviderClient
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        // Obtener ubicación al abrir la app
+        lifecycleScope.launch {
+            val location = getCurrentLocation()
+            if (location != null) {
+                Log.d("LOCATION", "Lat: ${location.latitude}, Lng: ${location.longitude}")
+            } else {
+                Log.d("LOCATION", "No se pudo obtener la ubicación")
+            }
+        }
+
+        setContent {
+            CloggerTheme {
+                val navController = rememberNavController()
+                val context = LocalContext.current
+
+                // Programar notificaciones diarias globales
+                LaunchedEffect(Unit) {
+                    NotificationScheduler.scheduleDailyNotifications(context)
+                }
+
+                // NavHost para navegación
+                NavHost(navController = navController, startDestination = "login") {
+
+                    // --- LOGIN ---
+                    composable("login") {
+                        LoginScreen(
+                            onLoginSuccess = {
+                                navController.navigate("main") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            },
+                            onRegisterClick = {
+                                navController.navigate("register")
+                            }
+                        )
+                    }
+
+                    // --- REGISTER ---
+                    composable("register") {
+                        RegisterScreen(
+                            onLoginClick = {
+                                navController.navigate("login") {
+                                    popUpTo("register") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    // --- MAIN ---
+                    composable("main") {
+                        MainFlowScreen()
+                    }
+
+                    // --- NOTIFICATIONS ---
+                    composable("notifications") {
+                        val notificationViewModel: NotificationViewModel = viewModel(
+                            factory = NotificationViewModelFactory(context)
+                        )
+
+                        // Llamar fetchWeather si quieres que se genere notificación al abrir
+                        LaunchedEffect(Unit) {
+                            // Reemplaza con la lat/lon real si quieres
+                            val latitude = 12.0
+                            val longitude = -86.0
+                            notificationViewModel.fetchWeather(latitude, longitude)
+                        }
+
+                        NotificationScreen(
+                            navController = navController,
+                            viewModel = notificationViewModel
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Función para obtener ubicación dinámica
+    private suspend fun getCurrentLocation(): Location? {
+        return try {
+            if (ContextCompat.checkSelfPermission(
+                    this,
                     Manifest.permission.ACCESS_FINE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
@@ -261,5 +383,5 @@ fun PreviewMainScreen() {
 @Composable
 fun PreviewMainScreen() {
     val navController = rememberNavController() // Le asignamos la navegacion
-    MainScreen(navController)
+    MainFlowScreen(navController)
 }*/
