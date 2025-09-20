@@ -262,6 +262,7 @@ import kotlinx.coroutines.tasks.await
         }
     }
 }*/
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -334,16 +335,18 @@ class MainActivity : ComponentActivity() {
                             factory = NotificationViewModelFactory(context)
                         )
 
-                        // Llamar fetchWeather si quieres que se genere notificación al abrir
                         LaunchedEffect(Unit) {
-                            // Reemplaza con la lat/lon real si quieres
-                            val latitude = 12.0
-                            val longitude = -86.0
-                            notificationViewModel.fetchWeather(latitude, longitude)
+                            val location = getCurrentLocation()
+                            location?.let {
+                                notificationViewModel.fetchWeather(it.latitude, it.longitude)
+                            }
                         }
 
-                        NotificationScreen(
+                        /*NotificationScreen(
                             navController = navController,
+                            viewModel = notificationViewModel
+                        )*/
+                        NotificationScreen(
                             viewModel = notificationViewModel
                         )
                     }

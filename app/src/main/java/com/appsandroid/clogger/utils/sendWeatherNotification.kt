@@ -16,7 +16,7 @@ import androidx.core.content.ContextCompat
 import com.appsandroid.clogger.MainActivity
 import com.appsandroid.clogger.R
 
-fun sendWeatherNotification(context: Context, title: String, message: String, id: Int = 1000) {
+fun sendWeatherNotification(context: Context, title: String, message: String, id: Int) {
     val channelId = "weather_channel"
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -24,20 +24,14 @@ fun sendWeatherNotification(context: Context, title: String, message: String, id
             channelId,
             "Notificaciones de Clima",
             NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "Alertas y reportes del clima actual"
-        }
-        val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
+        ).apply { description = "Alertas y reportes del clima" }
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     val intent = Intent(context, MainActivity::class.java)
-    val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    } else {
-        PendingIntent.FLAG_UPDATE_CURRENT
-    }
-    val pendingIntent = PendingIntent.getActivity(context, 0, intent, pendingFlags)
+    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    else PendingIntent.FLAG_UPDATE_CURRENT
+    val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
 
     val notification = NotificationCompat.Builder(context, channelId)
         .setSmallIcon(R.drawable.baseline_add_alert_24)
@@ -49,10 +43,7 @@ fun sendWeatherNotification(context: Context, title: String, message: String, id
         .setContentIntent(pendingIntent)
         .build()
 
-    // ✅ Verificar permiso antes de notificar
-    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-        == PackageManager.PERMISSION_GRANTED
-    ) {
+    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
         NotificationManagerCompat.from(context).notify(id, notification)
     }
 }

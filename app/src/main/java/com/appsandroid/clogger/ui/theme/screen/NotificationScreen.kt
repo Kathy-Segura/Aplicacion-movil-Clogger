@@ -37,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,34 +66,19 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 import com.appsandroid.clogger.data.network.WeatherApi
+import com.appsandroid.clogger.data.repository.WeatherNotificationRepository
 import com.appsandroid.clogger.viewmodel.NotificationViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/*@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
     navController: NavHostController,
     viewModel: NotificationViewModel
 ) {
-    // Estado local de notificaciones
     val notifications by viewModel.notifications.collectAsState()
 
-    // Observar el clima actual
-    val weather by viewModel.weather.collectAsState()
-    val current = weather?.current_weather
-    val hourly = weather?.hourly
-
-    // Banner superior
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Notificaciones") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
-                    }
-                }
-            )
-        }
+        topBar = {}
     ) { padding ->
         Column(
             modifier = Modifier
@@ -101,12 +87,13 @@ fun NotificationScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            // Banner superior de centro de notificaciones
+
+            // Banner superior
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFEBDDF8)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 12.dp),
                 elevation = CardDefaults.cardElevation(6.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
@@ -132,7 +119,7 @@ fun NotificationScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
             if (notifications.isEmpty()) {
                 Text(
@@ -155,8 +142,12 @@ fun NotificationScreen(
                                 Text(notif.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 Spacer(Modifier.height(6.dp))
                                 Text(notif.message, fontSize = 14.sp)
-                                Spacer(Modifier.height(6.dp))
-                                Text(notif.time, fontSize = 12.sp, color = Color.Gray)
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    notif.time,
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
                             }
                         }
                     }
@@ -164,7 +155,90 @@ fun NotificationScreen(
             }
         }
     }
+}*/
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NotificationScreen(
+    viewModel: NotificationViewModel
+) {
+    // Observa el StateFlow del ViewModel
+    val notifications by viewModel.notifications.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8F6FA))
+            .padding(16.dp)
+    ) {
+        // Banner superior
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFEBDDF8)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            elevation = CardDefaults.cardElevation(6.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_add_alert_24),
+                    contentDescription = "Notificaciones",
+                    tint = Color(0xFF7E57C2),
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Centro de Notificaciones",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = Color(0xFF4A148C)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        if (notifications.isEmpty()) {
+            Text(
+                "No hay notificaciones disponibles.",
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        } else {
+            LazyColumn {
+                items(notifications) { notif ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(notif.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(Modifier.height(6.dp))
+                            Text(notif.message, fontSize = 14.sp)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                notif.time,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -191,7 +265,7 @@ fun getWeatherDescription(code: Int?): String {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-@Composable
+/*@Composable
 fun TestWeatherNotificationButton(
     context: Context,
     viewModel: NotificationViewModel
@@ -245,4 +319,4 @@ fun TestWeatherNotificationButton(
     ) {
         Text(" Probar Notificación con Clima", color = Color.White)
     }
-}
+}*/

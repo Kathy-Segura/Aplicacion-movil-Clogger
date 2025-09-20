@@ -218,7 +218,7 @@ fun MainFlowScreen() {
                                 }
 
                                 NotificationScreen(
-                                    navController = bottomNavController,
+                                  //  navController = bottomNavController,
                                     viewModel = notificationViewModel
                                 )
                             }
@@ -235,9 +235,6 @@ fun MainFlowScreen() {
 }
 
 enum class TopBarScreen { Notificaciones, Archivos }
-
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -259,7 +256,7 @@ sealed class BottomNavItem(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-@Composable
+/*@Composable
 fun BottomNavBar(
     navController: NavController,
     topBarState: MutableState<TopBarScreen?> // <- obligatorio ahora
@@ -277,6 +274,48 @@ fun BottomNavBar(
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
+                    }
+                },
+                icon = {
+                    Icon(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = item.title,
+                        tint = if (currentRoute == item.route) Color(0xFF2D9DFB) else Color.Gray
+                    )
+                },
+                label = {
+                    Text(
+                        item.title,
+                        color = if (currentRoute == item.route) Color(0xFF2D9DFB) else Color.Gray
+                    )
+                }
+            )
+        }
+    }
+}*/
+
+
+@Composable
+fun BottomNavBar(
+    navController: NavController,
+    topBarState: MutableState<TopBarScreen?> // obligatorio
+) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    NavigationBar(containerColor = Color.White) {
+        // Filtra items nulos y rutas nulas
+        BottomNavItem.items.filter { it != null && it.route != null }.forEach { item ->
+            NavigationBarItem(
+                selected = currentRoute == item.route,
+                onClick = {
+                    topBarState.value = null // cierra cualquier TopBar
+                    item.route?.let { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 },
                 icon = {

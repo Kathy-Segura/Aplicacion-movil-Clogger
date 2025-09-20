@@ -72,14 +72,17 @@ import java.util.Calendar
     }
 }*/
 
-object NotificationScheduler {
+/*object NotificationScheduler {
 
     fun scheduleDailyNotifications(context: Context) {
-        // Programa 4 notificaciones al día
-        scheduleAtHour(context, 6, 0, "morning_weather", 1001)   // 6:00 AM
-        scheduleAtHour(context, 12, 0, "noon_weather", 1002)     // 12:00 PM
-        scheduleAtHour(context, 18, 0, "evening_weather", 1003)  // 6:00 PM
-        scheduleAtHour(context, 22, 0, "night_weather", 1004)    // 10:00 PM
+
+        // Para prueba: solo una notificación
+        scheduleAtHour(context, 15, 35, "test_weather_alert", 9999)
+
+        val hours = listOf(6, 12, 18, 22) // horarios útiles
+        hours.forEachIndexed { index, hour ->
+            scheduleAtHour(context, hour, 0, "weather_alert_${index + 1}", 1001 + index)
+        }
     }
 
     private fun scheduleAtHour(
@@ -113,6 +116,56 @@ object NotificationScheduler {
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "daily_weather_notification_$type",
             ExistingPeriodicWorkPolicy.REPLACE,
+            workRequest
+        )
+    }
+} */
+
+object NotificationScheduler {
+
+    fun scheduleDailyNotifications(context: Context) {
+
+        // Para prueba: notificación próxima
+        scheduleAtHour(context, 16, 15, "test_weather_alert", 9999)
+
+        // Horarios regulares
+        val hours = listOf(6, 12, 18, 22)
+        hours.forEachIndexed { index, hour ->
+            scheduleAtHour(context, hour, 0, "weather_alert_${index + 1}", 1001 + index)
+        }
+    }
+
+    private fun scheduleAtHour(
+        context: Context,
+        hour: Int,
+        minute: Int,
+        type: String,
+        notificationId: Int
+    ) {
+        val now = Calendar.getInstance()
+        val next = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            if (before(now)) add(Calendar.DAY_OF_MONTH, 1)
+        }
+
+        val initialDelay = next.timeInMillis - now.timeInMillis
+
+        val data = Data.Builder()
+            .putString("notificationType", type)
+            .putInt("notificationId", notificationId)
+            .build()
+
+        val workRequest = OneTimeWorkRequestBuilder<WeatherNotificationWorker>()
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .setInputData(data)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "daily_weather_notification_$type",
+            ExistingWorkPolicy.REPLACE,
             workRequest
         )
     }

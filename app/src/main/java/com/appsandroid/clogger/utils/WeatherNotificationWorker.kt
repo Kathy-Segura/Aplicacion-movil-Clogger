@@ -13,7 +13,11 @@ import androidx.work.WorkerParameters
 import com.appsandroid.clogger.MainActivity
 import com.appsandroid.clogger.R
 import com.appsandroid.clogger.data.model.DailyResponse
+import com.appsandroid.clogger.data.model.WeatherNotification
 import com.appsandroid.clogger.data.network.RetroWheather
+import com.appsandroid.clogger.data.repository.WeatherNotificationRepository
+import com.appsandroid.clogger.data.repository.WeatherRepository
+import com.appsandroid.clogger.ui.theme.screen.getWeatherDescription
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -157,44 +161,48 @@ import kotlinx.coroutines.withContext
     }
 }*/
 
-class WeatherNotificationWorker(
+/*class WeatherNotificationWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
-    private val channelId = "weather_notifications"
+    private val channelId = "weather_channel"
+    private val repo = WeatherRepository()
 
     @SuppressLint("MissingPermission")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
+            // Obtener ubicación real
             val fused = LocationServices.getFusedLocationProviderClient(applicationContext)
-            val location = try {
-                fused.lastLocation.await()
-            } catch (_: Exception) {
-                null
-            }
-
+            val location = try { fused.lastLocation.await() } catch (_: Exception) { null }
             val lat = location?.latitude ?: 12.1364
             val lon = location?.longitude ?: -86.2514
 
-            val response = RetroWheather.api.getWeather(lat, lon)
+            // Obtener clima
+            val weather = repo.fetchWeather(lat, lon)
 
-            val current = response.current_weather
-            val humidity = response.hourly?.relativehumidity_2m?.firstOrNull()
-            val rain = response.hourly?.precipitation?.firstOrNull()
-            val wind = current?.windspeed ?: 0.0
+            // Generar notificación
+            val notifList = mutableListOf<WeatherNotification>()
 
-            val message = buildString {
-                append("🌡 ${current?.temperature ?: "--"}°C")
-                append(" | 💧 ${humidity ?: "--"}%")
-                append(" | 🌬 ${"%.1f".format(wind)} km/h")
-                if ((rain ?: 0.0) > 0.2) append(" | 🌧 Lluvia esperada")
+            val rainNext6h = weather?.hourly?.precipitation?.take(6)?.sum() ?: 0.0
+            if (rainNext6h > 0.5) {
+                val msg = "Se esperan ${"%.1f".format(rainNext6h)}mm de lluvia en las próximas horas."
+                notifList.add(WeatherNotification("☔ Alerta de lluvia", msg))
             }
 
-            val type = inputData.getString("notificationType") ?: "weather"
-            val notifId = inputData.getInt("notificationId", 1000)
+            weather?.current_weather?.let {
+                val description = getWeatherDescription(it.weathercode)
+                val msg = "Clima actual: $description\n🌡️ ${it.temperature}°C\n💨 ${it.windspeed} km/h"
+                notifList.add(WeatherNotification("🌤️ Clima", msg))
+            }
 
-            sendNotification("Clogger - Clima $type", message, notifId)
+            // Mandar notificaciones al sistema
+            notifList.forEachIndexed { index, notif ->
+                sendWeatherNotification(applicationContext, notif.title, notif.message, 2000 + index)
+            }
+
+            // Guardar en DataStore o Room para NotificationScreen
+            WeatherNotificationRepository.saveNotifications(applicationContext, notifList)
 
             Result.success()
         } catch (e: Exception) {
@@ -202,41 +210,54 @@ class WeatherNotificationWorker(
             Result.retry()
         }
     }
+}*/
 
+class WeatherNotificationWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
 
-    private fun sendNotification(title: String, message: String, id: Int) {
-        sendWeatherNotification(applicationContext, title, message, id)
+    private val repo = WeatherRepository()
+    private val channelId = "weather_channel"
 
-        val notificationManager =
-            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    @SuppressLint("MissingPermission")
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
+            // Obtener ubicación dinámica
+            val fused = LocationServices.getFusedLocationProviderClient(applicationContext)
+            val location = try { fused.lastLocation.await() } catch (_: Exception) { null }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Notificaciones de Clima",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            notificationManager.createNotificationChannel(channel)
+            val lat = location?.latitude ?: 12.1364
+            val lon = location?.longitude ?: -86.2514
+
+            val weather = repo.fetchWeather(lat, lon)
+
+            val notifications = mutableListOf<WeatherNotification>()
+
+            // Clima general
+            weather?.current_weather?.let { current ->
+                val description = getWeatherDescription(current.weathercode)
+                val humidity = weather.hourly?.relativehumidity_2m?.firstOrNull() ?: "--"
+                val msg = "Clima: $description\n🌡 ${current.temperature}°C | 💨 ${"%.1f".format(current.windspeed)} km/h | 💧 Humedad: $humidity%"
+                notifications.add(WeatherNotification("🌤️ Clima", msg))
+                sendWeatherNotification(applicationContext, "🌤️ Clima", msg, inputData.getInt("notificationId", 1000))
+            }
+
+            // Alerta de lluvia próximas 6 horas
+            val rainNext6h = weather?.hourly?.precipitation?.take(6)?.sum() ?: 0.0
+            if (rainNext6h > 0.5) {
+                val msg = "Se esperan ${"%.1f".format(rainNext6h)}mm de lluvia en las próximas horas."
+                notifications.add(WeatherNotification("☔ Alerta de lluvia", msg))
+                sendWeatherNotification(applicationContext, "☔ Alerta de lluvia", msg, inputData.getInt("notificationId", 1000) + 100)
+            }
+
+            // Guardar en DataStore para NotificationScreen
+            WeatherNotificationRepository.saveNotifications(applicationContext, notifications)
+
+            Result.success()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.retry()
         }
-
-        val intent = Intent(applicationContext, MainActivity::class.java)
-        val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        }
-        val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, pendingFlags)
-
-        val notification = NotificationCompat.Builder(applicationContext, channelId)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setSmallIcon(R.drawable.baseline_add_alert_24)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .build()
-
-        notificationManager.notify(id, notification)
     }
 }

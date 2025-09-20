@@ -14,7 +14,7 @@ import org.osmdroid.views.overlay.Marker
 
 @Composable
 fun MapasScreen() {
-    AndroidView(factory = { context: Context ->
+    /*AndroidView(factory = { context: Context ->
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             controller.setZoom(7.0)
@@ -26,5 +26,5 @@ fun MapasScreen() {
             marker.title = "Managua"
             overlays.add(marker)
         }
-    }, modifier = Modifier.fillMaxSize())
+    }, modifier = Modifier.fillMaxSize())*/
 }
