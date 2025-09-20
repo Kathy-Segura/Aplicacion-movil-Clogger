@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
-
 class NotificationViewModel(
     private val context: Context,
     private val repo: WeatherRepository = WeatherRepository()
@@ -41,7 +40,6 @@ class NotificationViewModel(
     val error: StateFlow<String?> = _error
 
     init {
-        // Escuchar notificaciones persistentes en DataStore
         viewModelScope.launch {
             WeatherNotificationRepository.notificationsFlow(context).collect { list ->
                 _notifications.value = list
@@ -52,14 +50,12 @@ class NotificationViewModel(
     fun fetchWeather(lat: Double, lon: Double) {
         viewModelScope.launch {
             _loading.value = true
-            _error.value = null
             try {
-                val res: WeatherResponse = repo.fetchWeather(lat, lon)
-                    ?: return@launch  // Si falla, salir
+                val res: WeatherResponse = repo.fetchWeather(lat, lon) ?: return@launch
                 _weather.value = res
                 generateNotifications(res)
             } catch (e: Exception) {
-                _error.value = e.message ?: "Error desconocido al obtener clima"
+                _error.value = e.message ?: "Error al obtener clima"
             } finally {
                 _loading.value = false
             }
@@ -67,29 +63,30 @@ class NotificationViewModel(
     }
 
     private fun generateNotifications(weather: WeatherResponse) {
-        val list = _notifications.value.toMutableList()
+        val newNotifs = mutableListOf<WeatherNotification>()
 
-        // 🌧️ Lluvia próximas 6h
+        // ☔ Lluvia
         val rainNext6h = weather.hourly?.precipitation?.take(6)?.sum() ?: 0.0
         if (rainNext6h > 0.5) {
             val msg = "Se esperan ${"%.1f".format(rainNext6h)}mm de lluvia en las próximas horas."
-            if (list.none { it.message == msg }) {
-                val notif = WeatherNotification("☔ Alerta de lluvia", msg)
-                list.add(notif)
-                WeatherNotificationRepository.saveNotifications(context, list)
-                sendWeatherNotification(context, notif.title, notif.message, 2001)
+            if (_notifications.value.none { it.message == msg }) {
+                newNotifs.add(WeatherNotification("☔ Alerta de lluvia", msg))
             }
         }
 
-        // 🌤️ Clima actual
+        // 🌤️ Clima
         weather.current_weather?.let {
             val description = getWeatherDescription(it.weathercode)
             val msg = "Clima actual: $description\n🌡️ ${it.temperature}°C\n💨 ${it.windspeed} km/h"
-            if (list.none { n -> n.message == msg }) {
-                val notif = WeatherNotification("🌤️ Clima", msg)
-                list.add(notif)
-                WeatherNotificationRepository.saveNotifications(context, list)
-                sendWeatherNotification(context, notif.title, notif.message, 2002)
+            if (_notifications.value.none { it.message == msg }) {
+                newNotifs.add(WeatherNotification("🌤️ Clima", msg))
+            }
+        }
+
+        if (newNotifs.isNotEmpty()) {
+            WeatherNotificationRepository.saveNotifications(context, newNotifs)
+            newNotifs.forEachIndexed { i, notif ->
+                sendWeatherNotification(context, notif.title, notif.message, 2100 + i)
             }
         }
     }

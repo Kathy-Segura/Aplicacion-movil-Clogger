@@ -26,12 +26,14 @@ object WeatherNotificationRepository {
     private const val DATASTORE_NAME = "weather_notifications"
     private val NOTIFICATIONS_KEY = stringSetPreferencesKey("notifications")
 
-    fun saveNotifications(context: Context, list: List<WeatherNotification>) {
+    fun saveNotifications(context: Context, newList: List<WeatherNotification>) {
         val dataStore = context.dataStore
-        val serialized = list.map { "${it.title}||${it.message}||${it.time}" }.toSet()
         CoroutineScope(Dispatchers.IO).launch {
             dataStore.edit { prefs ->
-                prefs[NOTIFICATIONS_KEY] = serialized
+                val current = prefs[NOTIFICATIONS_KEY] ?: emptySet()
+                val serializedNew = newList.map { "${it.title}||${it.message}||${it.time}" }
+                // acumular (append)
+                prefs[NOTIFICATIONS_KEY] = current + serializedNew.toSet()
             }
         }
     }
@@ -47,7 +49,7 @@ object WeatherNotificationRepository {
                     message = parts.getOrNull(1) ?: "",
                     time = parts.getOrNull(2) ?: SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                 )
-            }
+            }.sortedByDescending { it.time } // más recientes primero
         }
     }
 

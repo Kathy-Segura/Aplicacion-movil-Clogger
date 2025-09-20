@@ -223,36 +223,50 @@ class WeatherNotificationWorker(
     @SuppressLint("MissingPermission")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            // Obtener ubicación dinámica
             val fused = LocationServices.getFusedLocationProviderClient(applicationContext)
             val location = try { fused.lastLocation.await() } catch (_: Exception) { null }
 
-            val lat = location?.latitude ?: 12.1364
-            val lon = location?.longitude ?: -86.2514
+            val lat = location?.latitude ?: return@withContext Result.retry()
+            val lon = location.longitude
 
             val weather = repo.fetchWeather(lat, lon)
 
             val notifications = mutableListOf<WeatherNotification>()
 
-            // Clima general
+            // 🌤️ Clima actual
             weather?.current_weather?.let { current ->
                 val description = getWeatherDescription(current.weathercode)
                 val humidity = weather.hourly?.relativehumidity_2m?.firstOrNull() ?: "--"
                 val msg = "Clima: $description\n🌡 ${current.temperature}°C | 💨 ${"%.1f".format(current.windspeed)} km/h | 💧 Humedad: $humidity%"
-                notifications.add(WeatherNotification("🌤️ Clima", msg))
-                sendWeatherNotification(applicationContext, "🌤️ Clima", msg, inputData.getInt("notificationId", 1000))
+                val notif = WeatherNotification("🌤️ Clima", msg)
+                notifications.add(notif)
+                sendWeatherNotification(applicationContext, notif.title, notif.message, inputData.getInt("notificationId", 1000))
             }
 
-            // Alerta de lluvia próximas 6 horas
+            // ☔ Lluvia próximas 6 horas
             val rainNext6h = weather?.hourly?.precipitation?.take(6)?.sum() ?: 0.0
             if (rainNext6h > 0.5) {
                 val msg = "Se esperan ${"%.1f".format(rainNext6h)}mm de lluvia en las próximas horas."
-                notifications.add(WeatherNotification("☔ Alerta de lluvia", msg))
-                sendWeatherNotification(applicationContext, "☔ Alerta de lluvia", msg, inputData.getInt("notificationId", 1000) + 100)
+                val notif = WeatherNotification("☔ Alerta de lluvia", msg)
+                notifications.add(notif)
+                sendWeatherNotification(applicationContext, notif.title, notif.message, inputData.getInt("notificationId", 1000) + 100)
             }
 
-            // Guardar en DataStore para NotificationScreen
-            WeatherNotificationRepository.saveNotifications(applicationContext, notifications)
+            // ⚡ Tormenta eléctrica
+            val thunder = weather?.hourly?.weathercode?.take(6)?.any { code ->
+                code == 95 || code == 96 || code == 99
+            } ?: false
+            if (thunder) {
+                val msg = "⚡ Posibles tormentas eléctricas en las próximas horas."
+                val notif = WeatherNotification("⚡ Tormenta", msg)
+                notifications.add(notif)
+                sendWeatherNotification(applicationContext, notif.title, notif.message, inputData.getInt("notificationId", 1000) + 200)
+            }
+
+            // Guardar en DataStore (acumulativo)
+            if (notifications.isNotEmpty()) {
+                WeatherNotificationRepository.saveNotifications(applicationContext, notifications)
+            }
 
             Result.success()
         } catch (e: Exception) {

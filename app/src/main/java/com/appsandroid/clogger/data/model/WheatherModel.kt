@@ -25,7 +25,8 @@ data class HourlyResponse(
     val relativehumidity_2m: List<Double>?,
     val surface_pressure: List<Double>?,        // presión
     val cloudcover: List<Double>?,              // nubosidad
-    val windspeed_10m: List<Double>?            // viento cada hora
+    val windspeed_10m: List<Double>?,            // viento cada hora
+    val weathercode: List<Int>?                 // <-- agregado: códigos por hora (importante)
 )
 
 data class DailyResponse(

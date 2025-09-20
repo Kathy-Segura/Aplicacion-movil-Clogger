@@ -126,7 +126,7 @@ object NotificationScheduler {
     fun scheduleDailyNotifications(context: Context) {
 
         // Para prueba: notificación próxima
-        scheduleAtHour(context, 16, 15, "test_weather_alert", 9999)
+       // scheduleAtHour(context, 16, 15, "test_weather_alert", 9999)
 
         // Horarios regulares
         val hours = listOf(6, 12, 18, 22)
