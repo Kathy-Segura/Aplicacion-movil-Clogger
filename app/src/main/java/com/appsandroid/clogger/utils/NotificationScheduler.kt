@@ -78,6 +78,7 @@ object NotificationScheduler {
         scheduleAtHour(context, 6, 0, "morning_weather", lat, lon)   // 6:00 AM
         scheduleAtHour(context, 12, 0, "noon_weather", lat, lon)     // 12:00 PM
         scheduleAtHour(context, 21, 0, "night_weather", lat, lon)    // 9:00 PM
+        scheduleAtHour(context, 22, 15, "night_weather", lat, lon)    // 9:00 PM
     }
 
     private fun scheduleAtHour(

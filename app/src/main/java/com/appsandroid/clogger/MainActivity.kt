@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -76,10 +77,16 @@ import com.appsandroid.clogger.ui.theme.screen.TopBarScreen
 import com.appsandroid.clogger.utils.NotificationPermissionHelper
 import com.appsandroid.clogger.utils.NotificationScheduler
 import com.appsandroid.clogger.viewmodel.ArchivosViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import android.Manifest
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.tasks.await
 
 /*class MainActivity : ComponentActivity() {
@@ -113,11 +120,12 @@ import kotlinx.coroutines.tasks.await
     }
 }*/
 
-class MainActivity : ComponentActivity() {
+//Funcion bastante funcional no da problemas con la inicializacion del login
+/*class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 🔔 Pedir permiso de notificaciones
+        //  Pedir permiso de notificaciones
         NotificationPermissionHelper.requestNotificationPermission(this)
 
         setContent {
@@ -152,36 +160,94 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
+}*/
 
 
-//Funcion que no sirve supuestamente unifica la navegacion pero no
-/*class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity() {
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            val navController = rememberNavController()
 
-            NavHost(
-                navController = navController,
-                startDestination = "login"
-            ) {
-                composable("login") {
-                    LoginScreen(
-                        onLoginSuccess = { navController.navigate("mainFlow") },
-                        onRegisterClick = { navController.navigate("register") }
+        // Pedir permiso de notificaciones
+        NotificationPermissionHelper.requestNotificationPermission(this)
+
+        // Inicializar FusedLocationProviderClient
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        setContent {
+            CloggerTheme {
+                val navController = rememberNavController()
+                val context = LocalContext.current
+
+                // Controla solo el inicio de notificaciones y ubicación
+                LaunchedEffect(Unit) {
+                    val location = getCurrentLocation(context)
+                    val latitude = location?.latitude ?: 12.1364
+                    val longitude = location?.longitude ?: -86.2514
+
+                    NotificationScheduler.scheduleDailyNotifications(
+                        context,
+                        latitude,
+                        longitude
                     )
                 }
-                composable("register") { RegisterScreen(onLoginClick = { navController.popBackStack() }) }
 
+                // Mantener navegación usando NavController
+                NavHost(
+                    navController = navController,
+                    startDestination = "login"
+                ) {
+                    composable("login") {
+                        LoginScreen(
+                            onLoginSuccess = {
+                                navController.navigate("main") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            },
+                            onRegisterClick = {
+                                navController.navigate("register")
+                            }
+                        )
+                    }
 
-               // RegisterScreen(onLoginClick = { navController.navigate("login") })
+                    composable("register") {
+                        RegisterScreen(
+                            onLoginClick = {
+                                navController.navigate("login") {
+                                    popUpTo("register") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
 
-                composable("mainFlow") { MainFlowScreen() }
+                    composable("main") {
+                        MainFlowScreen()
+                    }
+                }
             }
         }
     }
-}*/
+
+    // Función para obtener ubicación dinámica de manera segura
+    private suspend fun getCurrentLocation(context: Context): Location? {
+        return try {
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                fusedLocationClient.lastLocation.await()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
