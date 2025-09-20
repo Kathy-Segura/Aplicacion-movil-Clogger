@@ -10,7 +10,7 @@ interface WeatherApi {
     suspend fun getWeather(
         @Query("latitude") lat: Double,
         @Query("longitude") lon: Double,
-        @Query("hourly") hourly: String = "temperature_2m,precipitation,relativehumidity_2m",
+        @Query("hourly") hourly: String = "temperature_2m,precipitation,relativehumidity_2m,weathercode",
         @Query("daily") daily: String = "temperature_2m_max,temperature_2m_min,precipitation_sum",
         @Query("current_weather") current: Boolean = true,
         @Query("timezone") timezone: String = "auto"
