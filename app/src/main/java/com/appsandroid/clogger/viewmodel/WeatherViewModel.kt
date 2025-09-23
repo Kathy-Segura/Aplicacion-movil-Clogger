@@ -21,6 +21,24 @@ class WeatherViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    //////////////////////////////////////////////////////////////////////////
+
+    // --- NUEVO: Estados para MapasScreen ---
+    private val _mapCenter = MutableStateFlow<Pair<Double, Double>?>(null)
+    val mapCenter: StateFlow<Pair<Double, Double>?> = _mapCenter
+
+    private val _mapZoom = MutableStateFlow<Double?>(null)
+    val mapZoom: StateFlow<Double?> = _mapZoom
+
+    fun setMapCenter(lat: Double, lon: Double) {
+        _mapCenter.value = lat to lon
+    }
+
+    fun setMapZoom(zoom: Double) {
+        _mapZoom.value = zoom
+    }
+    //////////////////////////////////////////////////////////////////////////
+
     fun fetchWeather(lat: Double, lon: Double) {
         viewModelScope.launch {
             _loading.value = true

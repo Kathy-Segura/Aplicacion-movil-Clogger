@@ -49,7 +49,7 @@ android {
     }
 }
 
-// 👇 Fuerza las versiones correctas de kotlin-stdlib
+//  Fuerza las versiones correctas de kotlin-stdlib
 configurations.all {
     resolutionStrategy {
         force("org.jetbrains.kotlin:kotlin-stdlib:1.9.25")
