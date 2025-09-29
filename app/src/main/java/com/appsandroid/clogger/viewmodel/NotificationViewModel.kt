@@ -90,4 +90,10 @@ class NotificationViewModel(
             }
         }
     }
+
+    fun clearAllNotifications() {
+        viewModelScope.launch {
+            WeatherNotificationRepository.clearNotifications(context)
+        }
+    }
 }

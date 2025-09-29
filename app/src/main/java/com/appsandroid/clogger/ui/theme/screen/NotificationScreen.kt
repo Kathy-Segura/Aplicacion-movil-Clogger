@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,11 +32,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -156,8 +159,8 @@ fun NotificationScreen(
         }
     }
 }*/
-
-@OptIn(ExperimentalMaterial3Api::class)
+//bastante funcional
+/*@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
     viewModel: NotificationViewModel
@@ -232,13 +235,124 @@ fun NotificationScreen(
                                 color = Color.Gray
                             )
                         }
+
+                    }
+                }
+            }
+        }
+    }
+}*/
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NotificationScreen(
+    viewModel: NotificationViewModel
+) {
+    // Observa el StateFlow del ViewModel
+    val notifications by viewModel.notifications.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8F6FA))
+            .padding(16.dp)
+    ) {
+        // Banner superior con botón de limpiar
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFEBDDF8)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            elevation = CardDefaults.cardElevation(6.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_add_alert_24),
+                        contentDescription = "Notificaciones",
+                        tint = Color(0xFF7E57C2),
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        "Centro de Notificaciones",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = Color(0xFF4A148C)
+                    )
+                }
+            }
+        }
+
+        // 🔹 Botón de limpiar con ícono y estilo
+        FilledTonalButton(
+            onClick = { viewModel.clearAllNotifications() },
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = Color(0xFFEBDDF8), // mismo color del banner
+                contentColor = Color(0xFF4A148C)    // mismo color del texto del título
+            ),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_delete_forever_24),
+                contentDescription = "Limpiar notificaciones",
+                tint = Color(0xFF7E57C2), // igual que el ícono de la campana
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                "Limpiar",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = Color(0xFF4A148C) // igual al texto del título
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        if (notifications.isEmpty()) {
+            Text(
+                "No hay notificaciones disponibles.",
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        } else {
+            LazyColumn {
+                items(notifications) { notif ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(notif.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(Modifier.height(6.dp))
+                            Text(notif.message, fontSize = 14.sp)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                notif.time,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

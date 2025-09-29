@@ -53,6 +53,15 @@ object WeatherNotificationRepository {
         }
     }
 
+    fun clearNotifications(context: Context) {
+        val dataStore = context.dataStore
+        CoroutineScope(Dispatchers.IO).launch {
+            dataStore.edit { prefs ->
+                prefs[NOTIFICATIONS_KEY] = emptySet()
+            }
+        }
+    }
+
     // Extensión de Context para DataStore
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = DATASTORE_NAME)
 }
