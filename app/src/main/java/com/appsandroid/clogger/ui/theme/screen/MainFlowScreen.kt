@@ -222,9 +222,13 @@ fun MainFlowScreen() {
                                     viewModel = notificationViewModel
                                 )
                             }
-                            TopBarScreen.Archivos -> ArchivosScreen(
+                            /*TopBarScreen.Archivos -> ArchivosScreen(
                                 navController = bottomNavController,
                                 archivosViewModel = archivosViewModel
+                            )*/
+                            TopBarScreen.Archivos -> ArchivosScreen(
+                                navController = bottomNavController,
+                                viewModel = archivosViewModel
                             )
                         }
                     }

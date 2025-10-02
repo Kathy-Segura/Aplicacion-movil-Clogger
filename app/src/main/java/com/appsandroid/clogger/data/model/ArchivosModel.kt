@@ -1,6 +1,6 @@
 package com.appsandroid.clogger.data.model
 
-data class Dispositivo(
+/*data class Dispositivo(
     val serie: String,
     val nombre: String,
     val ubicacion: String,
@@ -29,6 +29,50 @@ data class Sensor(
 data class Lectura(
     val dispositivoid: Int,
     val sensorid: Int,
+    val fechahora: String,
+    val valor: Double,
+    val calidad: Int
+)*/
+import com.google.gson.annotations.SerializedName
+
+data class Dispositivo(
+    val serie: String,
+    val nombre: String,
+    val ubicacion: String,
+    val tipo: String,
+    val firmware: String,
+    val configuracion: Configuracion,
+    @SerializedName("dispositivoid")
+    val dispositivoId: Int? = null // lo devuelve el backend
+)
+
+data class Configuracion(
+    @SerializedName("intervalo_segundos")
+    val intervaloSegundos: Int,
+    val transmision: String,
+    @SerializedName("alerta_umbral")
+    val alertaUmbral: Int
+)
+
+data class Sensor(
+    @SerializedName("dispositivoid")
+    val dispositivoId: Int,
+    val codigosensor: String,
+    val nombre: String,
+    val unidad: String,
+    val factorescala: Double,
+    val desplazamiento: Double,
+    val rangomin: Double,
+    val rangomax: Double,
+    @SerializedName("sensorid")
+    val sensorId: Int? = null // lo devuelve el backend
+)
+
+data class Lectura(
+    @SerializedName("dispositivoid")
+    val dispositivoId: Int,
+    @SerializedName("sensorid")
+    val sensorId: Int,
     val fechahora: String,
     val valor: Double,
     val calidad: Int
