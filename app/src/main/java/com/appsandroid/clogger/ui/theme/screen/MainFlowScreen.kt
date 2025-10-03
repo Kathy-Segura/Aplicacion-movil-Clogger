@@ -181,7 +181,7 @@ fun MainFlowScreen() {
                             .fillMaxSize()
                             .background(Color.White) // fondo sólido blanco
                             //.background(Color(0xAA000000)) // fondo semi-transparente
-                            .clickable { topBarState.value = null } // cierra al tocar fuera
+                           //.clickable { topBarState.value = null } // cierra al tocar fuera
                     ) {
                         /*when (screen) {
                             TopBarScreen.Notificaciones -> NotificationScreen(
@@ -217,10 +217,8 @@ fun MainFlowScreen() {
                                     }
                                 }
 
-                                NotificationScreen(
-                                  //  navController = bottomNavController,
-                                    viewModel = notificationViewModel
-                                )
+                                NotificationScreen(viewModel = notificationViewModel) //navController = bottomNavController,
+
                             }
                             /*TopBarScreen.Archivos -> ArchivosScreen(
                                 navController = bottomNavController,

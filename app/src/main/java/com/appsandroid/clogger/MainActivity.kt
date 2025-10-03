@@ -368,24 +368,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // --- NOTIFICATIONS ---
-                    /*composable("notifications") {
-                        val notificationViewModel: NotificationViewModel = viewModel(
-                            factory = NotificationViewModelFactory(context)
-                        )
-
-                        LaunchedEffect(Unit) {
-                            val location = getCurrentLocation()
-                            location?.let {
-                                notificationViewModel.fetchWeather(it.latitude, it.longitude)
-                            }
-                        }
-
-                        NotificationScreen(
-                            viewModel = notificationViewModel
-                        )
-                    }*/
-
-                    // --- NOTIFICATIONS ---
                     composable("notifications") {
                         val notificationViewModel: NotificationViewModel = viewModel(
                             factory = NotificationViewModelFactory(context)

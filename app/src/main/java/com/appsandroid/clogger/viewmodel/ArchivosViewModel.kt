@@ -19,201 +19,8 @@ import kotlinx.coroutines.launch
 import java.io.InputStreamReader
 import java.util.UUID
 
+// funciona pero solo integra dispositivos y sensores
 /*class ArchivosViewModel : ViewModel() {
-
-    private val _dispositivos = mutableStateListOf<Dispositivo>()
-    val dispositivos: List<Dispositivo> get() = _dispositivos
-
-    private val _sensores = mutableStateListOf<Sensor>()
-    val sensores: List<Sensor> get() = _sensores
-
-    private val _lecturas = mutableStateListOf<Lectura>()
-    val lecturas: List<Lectura> get() = _lecturas
-
-    fun cargarDesdeCSV(uri: Uri, context: Context) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val reader = CSVReader(InputStreamReader(inputStream))
-                    val rows = reader.readAll()
-
-                    rows.drop(1).forEach { row -> // quitamos header
-                        if (row.size >= 8) {
-                            val dispositivo = Dispositivo(
-                                serie = row[0],
-                                nombre = row[1],
-                                ubicacion = row[2],
-                                tipo = row[3],
-                                firmware = row[4],
-                                configuracion = Configuracion(
-                                    intervalo_segundos = row[5].toIntOrNull() ?: 0,
-                                    transmision = row[6],
-                                    alerta_umbral = row[7].toIntOrNull() ?: 0
-                                )
-                            )
-                            if (_dispositivos.none { it.serie == dispositivo.serie }) {
-                                _dispositivos.add(dispositivo)
-                            }
-                        }
-                    }
-                } ?: Log.e("ArchivosViewModel", "Error: no se pudo abrir el archivo CSV")
-            } catch (e: Exception) {
-                Log.e("ArchivosViewModel", "Error al leer CSV: ${e.message}", e)
-            }
-        }
-    }
-
-    fun enviarDatos() {
-        viewModelScope.launch {
-            try {
-                _dispositivos.forEach { dispositivo ->
-                    RetrofitInstance.api.addDispositivo(dispositivo)
-                }
-                _sensores.forEach { sensor ->
-                    RetrofitInstance.api.addSensor(sensor)
-                }
-                if (_lecturas.isNotEmpty()) {
-                    RetrofitInstance.api.addLecturas(_lecturas)
-                }
-            } catch (e: Exception) {
-                Log.e("ArchivosViewModel", "Error al enviar datos: ${e.message}", e)
-            }
-        }
-    }
-}*/
-
-/*class ArchivosViewModel : ViewModel() {
-
-    private val _dispositivoId = mutableStateOf<Int?>(null)
-    val dispositivoId: Int? get() = _dispositivoId.value
-
-    private val _sensorTempId = mutableStateOf<Int?>(null)
-    val sensorTempId: Int? get() = _sensorTempId.value
-
-    private val _sensorHrId = mutableStateOf<Int?>(null)
-    val sensorHrId: Int? get() = _sensorHrId.value
-
-    private val _lecturas = mutableStateListOf<Lectura>()
-    val lecturas: List<Lectura> get() = _lecturas
-
-    // Registrar dispositivo
-    fun registrarDispositivo(nombre: String, ubicacion: String) {
-        viewModelScope.launch {
-            try {
-                val dispositivo = Dispositivo(
-                    serie = UUID.randomUUID().toString(),
-                    nombre = nombre,
-                    ubicacion = ubicacion,
-                    tipo = "DataLogger",
-                    firmware = "v1.0",
-                    configuracion = Configuracion(
-                        intervalo_segundos = 60,
-                        transmision = "wifi",
-                        alerta_umbral = 80
-                    )
-                )
-                val response = RetrofitInstance.api.addDispositivo(dispositivo)
-                if (response.isSuccessful) {
-                    _dispositivoId.value = response.body()?.id
-                }
-            } catch (e: Exception) {
-                Log.e("ArchivosViewModel", "Error registrar dispositivo: ${e.message}", e)
-            }
-        }
-    }
-
-    // Registrar sensores
-    fun registrarSensores() {
-        val dId = _dispositivoId.value ?: return
-        viewModelScope.launch {
-            try {
-                // Sensor Temperatura
-                val sensorTemp = Sensor(
-                    dispositivoId = dId,
-                    codigosensor = "TEMP01",
-                    nombre = "Temperatura",
-                    unidad = "°C",
-                    factorescala = 1.0,
-                    desplazamiento = 0.0,
-                    rangomin = -40.0,
-                    rangomax = 125.0
-                )
-                val r1 = RetrofitInstance.api.addSensor(sensorTemp)
-                if (r1.isSuccessful) _sensorTempId.value = r1.body()?.id
-
-                // Sensor Humedad
-                val sensorHr = Sensor(
-                    dispositivoId = dId,
-                    codigosensor = "HR01",
-                    nombre = "Humedad",
-                    unidad = "%",
-                    factorescala = 1.0,
-                    desplazamiento = 0.0,
-                    rangomin = 0.0,
-                    rangomax = 100.0
-                )
-                val r2 = RetrofitInstance.api.addSensor(sensorHr)
-                if (r2.isSuccessful) _sensorHrId.value = r2.body()?.id
-
-            } catch (e: Exception) {
-                Log.e("ArchivosViewModel", "Error registrar sensores: ${e.message}", e)
-            }
-        }
-    }
-
-    // Cargar lecturas desde CSV
-    fun cargarDesdeCSV(uri: Uri, context: Context) {
-        val dId = _dispositivoId.value
-        val tempId = _sensorTempId.value
-        val hrId = _sensorHrId.value
-        if (dId == null || tempId == null || hrId == null) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val reader = CSVReader(InputStreamReader(inputStream))
-                    val rows = reader.readAll()
-
-                    rows.drop(1).forEach { row ->
-                        if (row.size >= 4) {
-                            val fechaHora = row[1]
-                            val temperatura = row[2].toDoubleOrNull()
-                            val humedad = row[3].toDoubleOrNull()
-
-                            temperatura?.let {
-                                _lecturas.add(
-                                    Lectura(dId, tempId, fechaHora, it, 1)
-                                )
-                            }
-                            humedad?.let {
-                                _lecturas.add(
-                                    Lectura(dId, hrId, fechaHora, it, 1)
-                                )
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("ArchivosViewModel", "Error leer CSV: ${e.message}", e)
-            }
-        }
-    }
-
-    // Subir lecturas al backend
-    fun enviarLecturas() {
-        viewModelScope.launch {
-            try {
-                if (_lecturas.isNotEmpty()) {
-                    RetrofitInstance.api.addLecturas(_lecturas)
-                }
-            } catch (e: Exception) {
-                Log.e("ArchivosViewModel", "Error enviar lecturas: ${e.message}", e)
-            }
-        }
-    }
-}*/
-
-class ArchivosViewModel : ViewModel() {
 
     private val _uiMessage = mutableStateOf<String?>(null)
     val uiMessage: State<String?> get() = _uiMessage
@@ -338,5 +145,310 @@ class ArchivosViewModel : ViewModel() {
 
     fun limpiarLecturas() {
         _lecturas.clear()
+    }
+}*/
+
+//Funcion muy buena bastante funciona con los 3 botones pero sin alerts
+/*class ArchivosViewModel : ViewModel() {
+
+    private val _uiMessage = mutableStateOf<String?>(null)
+    val uiMessage: State<String?> get() = _uiMessage
+
+    private val _dispositivos = mutableStateListOf<Dispositivo>()
+    val dispositivos: List<Dispositivo> get() = _dispositivos
+
+    private val _sensores = mutableStateListOf<Sensor>()
+    val sensores: List<Sensor> get() = _sensores
+
+    private val _lecturas = mutableStateListOf<Lectura>()
+    val lecturas: List<Lectura> get() = _lecturas
+
+    // -----------------------------------------------------------------------
+    // REGISTRAR DISPOSITIVO (con validación duplicados)
+    // -----------------------------------------------------------------------
+    fun registrarDispositivo(nombre: String, ubicacion: String) {
+        viewModelScope.launch {
+            try {
+                if (_dispositivos.any { it.nombre == nombre && it.ubicacion == ubicacion }) {
+                    _uiMessage.value = "⚠️ Ya existe un dispositivo con ese nombre y ubicación"
+                    return@launch
+                }
+
+                val dispositivo = Dispositivo(
+                    serie = UUID.randomUUID().toString(),
+                    nombre = nombre,
+                    ubicacion = ubicacion,
+                    tipo = "DataLogger",
+                    firmware = "v1.0",
+                    configuracion = Configuracion(
+                        intervaloSegundos = 60,
+                        transmision = "wifi",
+                        alertaUmbral = 80
+                    )
+                )
+                val response = RetrofitInstance.api.addDispositivo(dispositivo)
+                if (response.isSuccessful) {
+                    val newDevice = dispositivo.copy(dispositivoId = response.body()?.dispositivoId)
+                    _dispositivos.add(newDevice)
+                    _uiMessage.value = "✅ Dispositivo registrado correctamente"
+                } else {
+                    _uiMessage.value = "❌ Error al registrar dispositivo"
+                }
+            } catch (e: Exception) {
+                _uiMessage.value = "⚠️ ${e.message}"
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // REGISTRAR SENSOR (dinámico con validación duplicados)
+    // -----------------------------------------------------------------------
+    fun registrarSensor(
+        dispositivoId: Int,
+        nombre: String,
+        unidad: String,
+        rangoMin: Double,
+        rangoMax: Double
+    ) {
+        viewModelScope.launch {
+            try {
+                if (_sensores.any { it.dispositivoId == dispositivoId && it.nombre == nombre }) {
+                    _uiMessage.value = "⚠️ Ya existe un sensor con ese nombre en este dispositivo"
+                    return@launch
+                }
+
+                val sensor = Sensor(
+                    dispositivoId = dispositivoId,
+                    codigosensor = UUID.randomUUID().toString().take(6),
+                    nombre = nombre,
+                    unidad = unidad,
+                    factorescala = 1.0,
+                    desplazamiento = 0.0,
+                    rangomin = rangoMin,
+                    rangomax = rangoMax
+                )
+                val response = RetrofitInstance.api.addSensor(sensor)
+                if (response.isSuccessful) {
+                    val newSensor = sensor.copy(sensorId = response.body()?.sensorId)
+                    _sensores.add(newSensor)
+                    _uiMessage.value = "✅ Sensor registrado correctamente"
+                } else {
+                    _uiMessage.value = "❌ Error al registrar sensor"
+                }
+            } catch (e: Exception) {
+                _uiMessage.value = "⚠️ ${e.message}"
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // ENVIAR LECTURAS
+    // -----------------------------------------------------------------------
+    fun enviarLecturas() {
+        viewModelScope.launch {
+            try {
+                if (_lecturas.isNotEmpty()) {
+                    val response = RetrofitInstance.api.addLecturas(_lecturas)
+                    if (response.isSuccessful) {
+                        _uiMessage.value = "✅ Lecturas enviadas (${_lecturas.size})"
+                    } else {
+                        _uiMessage.value = "❌ Error al enviar lecturas"
+                    }
+                } else {
+                    _uiMessage.value = "⚠️ No hay lecturas cargadas"
+                }
+            } catch (e: Exception) {
+                _uiMessage.value = "⚠️ ${e.message}"
+            }
+        }
+    }
+
+    fun agregarLectura(lectura: Lectura) {
+        _lecturas.add(lectura)
+    }
+
+    fun limpiarLecturas() {
+        _lecturas.clear()
+    }
+
+    fun setUiMessage(message: String) {
+        _uiMessage.value = message
+    }
+}*/
+
+class ArchivosViewModel : ViewModel() {
+
+    private val _uiMessage = mutableStateOf<String?>(null)
+    val uiMessage: State<String?> get() = _uiMessage
+
+    private val _showDialog = mutableStateOf(false)
+    val showDialog: State<Boolean> get() = _showDialog
+
+    private val _dispositivos = mutableStateListOf<Dispositivo>()
+    val dispositivos: List<Dispositivo> get() = _dispositivos
+
+    private val _sensores = mutableStateListOf<Sensor>()
+    val sensores: List<Sensor> get() = _sensores
+
+    private val _lecturas = mutableStateListOf<Lectura>()
+    val lecturas: List<Lectura> get() = _lecturas
+
+    init {
+        // Cargar dispositivos y sensores existentes al iniciar
+        cargarDispositivos()
+        cargarSensores()
+    }
+
+    // --------------------------
+    // Cargar dispositivos y sensores desde la API
+    // --------------------------
+    private fun cargarDispositivos() {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.getDispositivos()
+                if (response.isSuccessful) {
+                    _dispositivos.clear()
+                    response.body()?.let { _dispositivos.addAll(it) }
+                } else {
+                    showMessage("❌ Error cargando dispositivos: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                showMessage("⚠️ Error cargando dispositivos: ${e.message}")
+            }
+        }
+    }
+
+    private fun cargarSensores() {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.getSensores()
+                if (response.isSuccessful) {
+                    _sensores.clear()
+                    response.body()?.let { _sensores.addAll(it) }
+                } else {
+                    showMessage("❌ Error cargando sensores: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                showMessage("⚠️ Error cargando sensores: ${e.message}")
+            }
+        }
+    }
+
+    // --------------------------
+    // Mostrar mensaje en dialog
+    // --------------------------
+    fun showMessage(message: String) {
+        _uiMessage.value = message
+        _showDialog.value = true
+    }
+
+    fun dismissMessage() {
+        _showDialog.value = false
+    }
+
+    // --------------------------
+    // Registrar dispositivo
+    // --------------------------
+    fun registrarDispositivo(nombre: String, ubicacion: String) {
+        viewModelScope.launch {
+            try {
+                if (_dispositivos.any { it.nombre == nombre && it.ubicacion == ubicacion }) {
+                    showMessage("⚠️ Ya existe un dispositivo con ese nombre y ubicación")
+                    return@launch
+                }
+
+                val dispositivo = Dispositivo(
+                    serie = UUID.randomUUID().toString(),
+                    nombre = nombre,
+                    ubicacion = ubicacion,
+                    tipo = "DataLogger",
+                    firmware = "v1.0",
+                    configuracion = Configuracion(
+                        intervaloSegundos = 60,
+                        transmision = "wifi",
+                        alertaUmbral = 80
+                    )
+                )
+                val response = RetrofitInstance.api.addDispositivo(dispositivo)
+                if (response.isSuccessful) {
+                    val newDevice = dispositivo.copy(dispositivoId = response.body()?.dispositivoId)
+                    _dispositivos.add(newDevice)
+                    showMessage("✅ Dispositivo registrado correctamente")
+                } else {
+                    showMessage("❌ Error al registrar dispositivo")
+                }
+            } catch (e: Exception) {
+                showMessage("⚠️ ${e.message}")
+            }
+        }
+    }
+
+    // --------------------------
+    // Registrar sensor
+    // --------------------------
+    fun registrarSensor(dispositivoId: Int, nombre: String, unidad: String, rangoMin: Double, rangoMax: Double) {
+        viewModelScope.launch {
+            try {
+                if (_sensores.any { it.dispositivoId == dispositivoId && it.nombre == nombre }) {
+                    showMessage("⚠️ Ya existe un sensor con ese nombre en este dispositivo")
+                    return@launch
+                }
+
+                val sensor = Sensor(
+                    dispositivoId = dispositivoId,
+                    codigosensor = UUID.randomUUID().toString().take(6),
+                    nombre = nombre,
+                    unidad = unidad,
+                    factorescala = 1.0,
+                    desplazamiento = 0.0,
+                    rangomin = rangoMin,
+                    rangomax = rangoMax
+                )
+                val response = RetrofitInstance.api.addSensor(sensor)
+                if (response.isSuccessful) {
+                    val newSensor = sensor.copy(sensorId = response.body()?.sensorId)
+                    _sensores.add(newSensor)
+                    showMessage("✅ Sensor registrado correctamente")
+                } else {
+                    showMessage("❌ Error al registrar sensor")
+                }
+            } catch (e: Exception) {
+                showMessage("⚠️ ${e.message}")
+            }
+        }
+    }
+
+    // --------------------------
+    // Enviar lecturas
+    // --------------------------
+    fun enviarLecturas() {
+        viewModelScope.launch {
+            try {
+                if (_lecturas.isNotEmpty()) {
+                    val response = RetrofitInstance.api.addLecturas(_lecturas)
+                    if (response.isSuccessful) {
+                        showMessage("✅ Lecturas enviadas (${_lecturas.size})")
+                    } else {
+                        showMessage("❌ Error al enviar lecturas")
+                    }
+                } else {
+                    showMessage("⚠️ No hay lecturas cargadas")
+                }
+            } catch (e: Exception) {
+                showMessage("⚠️ ${e.message}")
+            }
+        }
+    }
+
+    fun agregarLectura(lectura: Lectura) {
+        _lecturas.add(lectura)
+    }
+
+    fun limpiarLecturas() {
+        _lecturas.clear()
+    }
+
+    fun setUiMessage(message: String) {
+        _uiMessage.value = message
     }
 }

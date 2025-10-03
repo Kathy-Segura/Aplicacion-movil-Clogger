@@ -23,14 +23,25 @@ interface ApiService {
     @POST("register")
     suspend fun register(@Body request: RegisterRequest): RegisterResponse
 
-    @POST("dispositivos")
+    @POST("devices")
     suspend fun addDispositivo(@Body dispositivo: Dispositivo): Response<Dispositivo>
 
-    @POST("sensores")
+    @POST("sensors")
     suspend fun addSensor(@Body sensor: Sensor): Response<Sensor>
 
-    @POST("lecturas")
-    suspend fun addLecturas(@Body lecturas: List<Lectura>): Response<List<Lectura>>
+    @POST("lecturas/batch")
+    suspend fun addLecturas(@Body lecturas: List<Lectura>): Response<Map<String, Int>>
+
+    // Enpoints con GET
+    @GET("devices")
+    suspend fun getDispositivos(): Response<List<Dispositivo>>
+
+    @GET("sensors")
+    suspend fun getSensores(): Response<List<Sensor>>
+
+    // Agregar los enpoints de health, charts y export lecturas.
+   /* @GET("charts")
+    @GET("/export/lecturas")*/
 
     //Enpoint de Prueba para los graficos
     @GET("/apiolap/cubedata")
