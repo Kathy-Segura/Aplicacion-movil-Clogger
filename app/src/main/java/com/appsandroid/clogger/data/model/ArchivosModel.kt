@@ -57,6 +57,22 @@ data class Configuracion(
 data class Sensor(
     @SerializedName("dispositivoid")
     val dispositivoId: Int,
+    val codigosensor: String? = null,
+    val nombre: String,
+    val unidad: String,
+    val factorescala: Double = 1.0,
+    val desplazamiento: Double = 0.0,
+    @SerializedName("rangomin")
+    val rangomin: Double? = 0.0,
+    @SerializedName("rangomax")
+    val rangomax: Double? = 100.0,
+    @SerializedName("sensorid")
+    val sensorId: Int? = null
+)
+
+/*data class Sensor(
+    @SerializedName("dispositivoid")
+    val dispositivoId: Int,
     val codigosensor: String,
     val nombre: String,
     val unidad: String,
@@ -66,7 +82,7 @@ data class Sensor(
     val rangomax: Double,
     @SerializedName("sensorid")
     val sensorId: Int? = null // lo devuelve el backend
-)
+)*/
 
 data class Lectura(
     @SerializedName("dispositivoid")
