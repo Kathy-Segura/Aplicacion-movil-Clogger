@@ -37,174 +37,6 @@ import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-//Funcion bastante completa valida los primeros 3 botones
-/*@Composable
-fun ArchivosScreen(
-    navController: NavController,
-    viewModel: ArchivosViewModel
-) {
-    val context = LocalContext.current
-    val uiMessage by viewModel.uiMessage
-    val dispositivos = viewModel.dispositivos
-    val sensores = viewModel.sensores
-
-    var selectedDispositivo by remember { mutableStateOf<Dispositivo?>(null) }
-    var selectedSensor by remember { mutableStateOf<Sensor?>(null) }
-
-    var nombre by remember { mutableStateOf("") }
-    var ubicacion by remember { mutableStateOf("") }
-
-    var sensorNombre by remember { mutableStateOf("") }
-    var sensorUnidad by remember { mutableStateOf("") }
-    var rangoMin by remember { mutableStateOf("") }
-    var rangoMax by remember { mutableStateOf("") }
-
-    // CSV Launcher
-    val csvLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri: Uri? ->
-            uri?.let {
-                try {
-                    val inputStream = context.contentResolver.openInputStream(uri)
-                    val reader = BufferedReader(InputStreamReader(inputStream))
-
-                    val lecturas = mutableListOf<Lectura>()
-                    reader.useLines { lines ->
-                        lines.drop(1).forEach { line ->
-                            val cols = line.split(",")
-                            if (cols.size >= 5) {
-                                val lectura = Lectura(
-                                    dispositivoId = cols[0].trim().toInt(),
-                                    sensorId = cols[1].trim().toInt(),
-                                    fechahora = cols[2].trim(),
-                                    valor = cols[3].trim().toDouble(),
-                                    calidad = cols[4].trim().toInt()
-                                )
-                                lecturas.add(lectura)
-                            }
-                        }
-                    }
-                    lecturas.forEach { viewModel.agregarLectura(it) }
-                    viewModel.setUiMessage("✅ Se cargaron ${lecturas.size} lecturas desde el CSV")
-                } catch (e: Exception) {
-                    viewModel.setUiMessage("⚠️ Error leyendo CSV: ${e.message}")
-                }
-            }
-        }
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Gestión de Dispositivos y Sensores",
-            style = MaterialTheme.typography.titleLarge.copy(color = Color(0xFF009688)),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // -------------------------------
-        // Dispositivos
-        // -------------------------------
-        DropdownMenuBox(
-            items = dispositivos + listOf(null), // null = Agregar nuevo
-            selectedItem = selectedDispositivo,
-            onItemSelected = { selectedDispositivo = it },
-            labelExtractor = { it?.let { "${it.nombre} - ${it.ubicacion}" } ?: "➕ Agregar nuevo dispositivo" }
-        )
-
-        if (selectedDispositivo == null) {
-            OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre dispositivo") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = ubicacion, onValueChange = { ubicacion = it }, label = { Text("Ubicación") }, modifier = Modifier.fillMaxWidth())
-
-            Button(
-                onClick = { viewModel.registrarDispositivo(nombre, ubicacion) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = nombre.isNotBlank() && ubicacion.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-            ) {
-                Text("Registrar dispositivo", color = Color.White)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // -------------------------------
-        // Sensores
-        // -------------------------------
-        DropdownMenuBox(
-            items = sensores.filter { it.dispositivoId == selectedDispositivo?.dispositivoId } + listOf(null),
-            selectedItem = selectedSensor,
-            onItemSelected = { selectedSensor = it },
-            labelExtractor = { it?.nombre ?: "➕ Agregar nuevo sensor" }
-        )
-
-        if (selectedSensor == null && selectedDispositivo != null) {
-            OutlinedTextField(value = sensorNombre, onValueChange = { sensorNombre = it }, label = { Text("Nombre sensor") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = sensorUnidad, onValueChange = { sensorUnidad = it }, label = { Text("Unidad (ej: °C)") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = rangoMin, onValueChange = { rangoMin = it }, label = { Text("Rango mínimo") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = rangoMax, onValueChange = { rangoMax = it }, label = { Text("Rango máximo") }, modifier = Modifier.fillMaxWidth())
-
-            Button(
-                onClick = {
-                    selectedDispositivo?.dispositivoId?.let { dId ->
-                        viewModel.registrarSensor(
-                            dispositivoId = dId,
-                            nombre = sensorNombre,
-                            unidad = sensorUnidad,
-                            rangoMin = rangoMin.toDoubleOrNull() ?: 0.0,
-                            rangoMax = rangoMax.toDoubleOrNull() ?: 0.0
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = sensorNombre.isNotBlank() && sensorUnidad.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00BCD4))
-            ) {
-                Text("Registrar sensor", color = Color.White)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // -------------------------------
-        // Selección de CSV
-        // -------------------------------
-        Button(
-            onClick = { csvLauncher.launch(arrayOf("")) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = selectedDispositivo != null && selectedSensor != null,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-        ) {
-            Text("Seleccionar archivo CSV", color = Color.White)
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = { viewModel.enviarLecturas() },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = viewModel.lecturas.isNotEmpty(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00BCD4))
-        ) {
-            Text("Subir lecturas del CSV", color = Color.White)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        uiMessage?.let {
-            Text(
-                text = it,
-                color = if (it.startsWith("✅")) Color(0xFF2E7D32) else Color(0xFFD32F2F),
-                modifier = Modifier.padding(top = 12.dp)
-            )
-        }
-    }
-}*/
 /*
 @Composable
 fun ArchivosScreen(
@@ -410,38 +242,6 @@ fun ArchivosScreen(
 }*/
 
 @Composable
-fun <T> DropdownMenuBox(
-    items: List<T?>,
-    selectedItem: T?,
-    onItemSelected: (T?) -> Unit,
-    labelExtractor: (T?) -> String
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF009688))
-        ) {
-            Text(selectedItem?.let { labelExtractor(it) } ?: "Seleccionar...")
-        }
-
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            items.forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(labelExtractor(item)) },
-                    onClick = {
-                        onItemSelected(item)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun ArchivosScreen(
     navController: NavController,
     viewModel: ArchivosViewModel
@@ -517,7 +317,7 @@ fun ArchivosScreen(
     )*/
 
     // --------------------------
-    // CSV Launcher
+    // CSV / Excel Launcher universal
     // --------------------------
     val csvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -526,59 +326,100 @@ fun ArchivosScreen(
                 try {
                     val inputStream = context.contentResolver.openInputStream(uri)
                     val reader = BufferedReader(InputStreamReader(inputStream))
-
                     val lecturas = mutableListOf<Lectura>()
 
                     reader.useLines { lines ->
-                        lines.drop(1).forEach { line ->
-                            val cols = line.split(",")
-                            // Ajustar según tu CSV real: columna 0=fecha, 1=Temp, 2=HR
-                            if (cols.size >= 3) {
-                                val fechaHora = cols[0].trim()
-                                val tempValor = cols[1].trim().toDoubleOrNull()
-                                val humValor = cols[2].trim().toDoubleOrNull()
+                        lines.forEach { rawLine ->
+                            val line = rawLine.trim()
 
-                                tempValor?.let { t ->
-                                    selectedDispositivo?.dispositivoId?.let { dId ->
-                                        selectedSensor?.sensorId?.let { sId ->
-                                            lecturas.add(
-                                                Lectura(
-                                                    dispositivoId = dId,
-                                                    sensorId = sId,
-                                                    fechahora = fechaHora,
-                                                    valor = t,
-                                                    calidad = 1
+                            // 🔹 Saltar encabezados o líneas vacías
+                            if (line.isEmpty() || !line.first().isDigit()) return@forEach
+
+                            // 🔹 Detectar automáticamente el delimitador
+                            val delimiter = when {
+                                line.contains("\t") -> "\t"         // tabulaciones (Excel .txt)
+                                line.contains(";") -> ";"           // punto y coma (Excel .csv europeo)
+                                line.contains(",") -> ","           // coma (CSV clásico)
+                                else -> "\\s+"                      // espacios múltiples
+                            }
+
+                            // 🔹 Dividir columnas
+                            val cols = line.split(Regex(delimiter))
+
+                            // Ejemplo esperado:
+                            // [0]=1, [1]=03/26/25, [2]=10:59:27, [3]=PM, [4]=19.297, [5]=100
+                            if (cols.size >= 4) {
+                                try {
+                                    // Construir fecha/hora (acepta varios formatos)
+                                    val fechaHora = buildString {
+                                        append(cols.getOrNull(1)?.trim() ?: "")
+                                        append(" ")
+                                        append(cols.getOrNull(2)?.trim() ?: "")
+                                        if (cols.getOrNull(3)?.contains("AM", true) == true ||
+                                            cols.getOrNull(3)?.contains("PM", true) == true
+                                        ) {
+                                            append(" ")
+                                            append(cols[3].trim())
+                                        }
+                                    }.trim()
+
+                                    // 🔹 Buscar valores numéricos
+                                    val tempValor = cols.findLast { it.trim().toDoubleOrNull() != null }?.toDoubleOrNull()
+                                    val humValor = cols.reversed().drop(1).find { it.trim().toDoubleOrNull() != null }?.toDoubleOrNull()
+
+                                    // 🔹 Agregar temperatura
+                                    tempValor?.let { t ->
+                                        selectedDispositivo?.dispositivoId?.let { dId ->
+                                            selectedSensor?.sensorId?.let { sId ->
+                                                lecturas.add(
+                                                    Lectura(
+                                                        dispositivoId = dId,
+                                                        sensorId = sId,
+                                                        fechahora = viewModel.convertirFechaCSV(fechaHora),  // 🔹 Convertimos la fecha antes de crear la lectura
+                                                        //fechahora = fechaHora,
+                                                        valor = t,
+                                                        calidad = 1
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
                                     }
-                                }
 
-                                humValor?.let { h ->
-                                    selectedDispositivo?.dispositivoId?.let { dId ->
-                                        selectedSensor?.sensorId?.let { sId ->
-                                            // Si tu sensor de humedad es diferente, cambia sId
-                                            lecturas.add(
-                                                Lectura(
-                                                    dispositivoId = dId,
-                                                    sensorId = sId,
-                                                    fechahora = fechaHora,
-                                                    valor = h,
-                                                    calidad = 1
+                                    // 🔹 Agregar humedad (si existe)
+                                    humValor?.let { h ->
+                                        selectedDispositivo?.dispositivoId?.let { dId ->
+                                            selectedSensor?.sensorId?.let { sId ->
+                                                lecturas.add(
+                                                    Lectura(
+                                                        dispositivoId = dId,
+                                                        sensorId = sId,
+                                                        fechahora = viewModel.convertirFechaCSV(fechaHora), // 🔹 Convertimos la fecha antes de crear la lectura
+                                                        //fechahora = fechaHora,
+                                                        valor = h,
+                                                        calidad = 1
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
                                     }
+
+                                } catch (e: Exception) {
+                                    println("⚠️ Error parseando línea: $line → ${e.message}")
                                 }
                             }
                         }
                     }
 
+                    // 🔹 Mostrar resultado
                     lecturas.forEach { viewModel.agregarLectura(it) }
-                    viewModel.setUiMessage("✅ Se cargaron ${lecturas.size} lecturas desde el CSV")
+                    val count = lecturas.size
+                    viewModel.setUiMessage(
+                        if (count > 0) "✅ Se cargaron $count lecturas desde el archivo"
+                        else "⚠️ No se detectaron lecturas válidas"
+                    )
 
                 } catch (e: Exception) {
-                    viewModel.setUiMessage("⚠️ Error leyendo CSV: ${e.message}")
+                    viewModel.setUiMessage("⚠️ Error leyendo archivo: ${e.message}")
                 }
             }
         }
@@ -811,6 +652,38 @@ fun ArchivosScreen(
                     color = Color.White,
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun <T> DropdownMenuBox(
+    items: List<T?>,
+    selectedItem: T?,
+    onItemSelected: (T?) -> Unit,
+    labelExtractor: (T?) -> String
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF009688))
+        ) {
+            Text(selectedItem?.let { labelExtractor(it) } ?: "Seleccionar...")
+        }
+
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            items.forEach { item ->
+                DropdownMenuItem(
+                    text = { Text(labelExtractor(item)) },
+                    onClick = {
+                        onItemSelected(item)
+                        expanded = false
+                    }
                 )
             }
         }

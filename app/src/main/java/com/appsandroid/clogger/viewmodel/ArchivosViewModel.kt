@@ -22,264 +22,8 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
-
-// funciona pero solo integra dispositivos y sensores
-/*class ArchivosViewModel : ViewModel() {
-
-    private val _uiMessage = mutableStateOf<String?>(null)
-    val uiMessage: State<String?> get() = _uiMessage
-
-    private val _dispositivoId = mutableStateOf<Int?>(null)
-    val dispositivoId: Int? get() = _dispositivoId.value
-
-    private val _sensorTempId = mutableStateOf<Int?>(null)
-    val sensorTempId: Int? get() = _sensorTempId.value
-
-    private val _sensorHrId = mutableStateOf<Int?>(null)
-    val sensorHrId: Int? get() = _sensorHrId.value
-
-    private val _lecturas = mutableStateListOf<Lectura>()
-    val lecturas: List<Lectura> get() = _lecturas
-
-    // -----------------------------------------------------------------------
-    // REGISTRAR DISPOSITIVO
-    // -----------------------------------------------------------------------
-    fun registrarDispositivo(nombre: String, ubicacion: String) {
-        viewModelScope.launch {
-            try {
-                val dispositivo = Dispositivo(
-                    serie = UUID.randomUUID().toString(),
-                    nombre = nombre,
-                    ubicacion = ubicacion,
-                    tipo = "DataLogger",
-                    firmware = "v1.0",
-                    configuracion = Configuracion(
-                        intervaloSegundos = 60,
-                        transmision = "wifi",
-                        alertaUmbral = 80
-                    )
-                )
-                val response = RetrofitInstance.api.addDispositivo(dispositivo)
-                if (response.isSuccessful) {
-                    _dispositivoId.value = response.body()?.dispositivoId
-                    _uiMessage.value = "✅ Dispositivo registrado correctamente"
-                } else {
-                    _uiMessage.value = "❌ Error al registrar dispositivo"
-                }
-            } catch (e: Exception) {
-                _uiMessage.value = "⚠️ ${e.message}"
-                Log.e("ArchivosViewModel", "Error registrar dispositivo: ${e.message}", e)
-            }
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // REGISTRAR SENSORES
-    // -----------------------------------------------------------------------
-    fun registrarSensores() {
-        val dId = _dispositivoId.value ?: run {
-            _uiMessage.value = "⚠️ Primero registra un dispositivo"
-            return
-        }
-        viewModelScope.launch {
-            try {
-                val sensorTemp = Sensor(
-                    dispositivoId = dId,
-                    codigosensor = "TEMP01",
-                    nombre = "Temperatura",
-                    unidad = "°C",
-                    factorescala = 1.0,
-                    desplazamiento = 0.0,
-                    rangomin = -40.0,
-                    rangomax = 125.0
-                )
-                val r1 = RetrofitInstance.api.addSensor(sensorTemp)
-                if (r1.isSuccessful) _sensorTempId.value = r1.body()?.sensorId
-
-                val sensorHr = Sensor(
-                    dispositivoId = dId,
-                    codigosensor = "HR01",
-                    nombre = "Humedad",
-                    unidad = "%",
-                    factorescala = 1.0,
-                    desplazamiento = 0.0,
-                    rangomin = 0.0,
-                    rangomax = 100.0
-                )
-                val r2 = RetrofitInstance.api.addSensor(sensorHr)
-                if (r2.isSuccessful) _sensorHrId.value = r2.body()?.sensorId
-
-                _uiMessage.value = "✅ Sensores registrados correctamente"
-            } catch (e: Exception) {
-                _uiMessage.value = "⚠️ ${e.message}"
-                Log.e("ArchivosViewModel", "Error registrar sensores: ${e.message}", e)
-            }
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // ENVIAR LECTURAS
-    // -----------------------------------------------------------------------
-    fun enviarLecturas() {
-        viewModelScope.launch {
-            try {
-                if (_lecturas.isNotEmpty()) {
-                    val response = RetrofitInstance.api.addLecturas(_lecturas)
-                    if (response.isSuccessful) {
-                        _uiMessage.value = "✅ Lecturas enviadas (${_lecturas.size})"
-                    } else {
-                        _uiMessage.value = "❌ Error al enviar lecturas"
-                    }
-                } else {
-                    _uiMessage.value = "⚠️ No hay lecturas cargadas"
-                }
-            } catch (e: Exception) {
-                _uiMessage.value = "⚠️ ${e.message}"
-                Log.e("ArchivosViewModel", "Error enviar lecturas: ${e.message}", e)
-            }
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // AGREGAR LECTURA (desde CSV)
-    // -----------------------------------------------------------------------
-    fun agregarLectura(lectura: Lectura) {
-        _lecturas.add(lectura)
-    }
-
-    fun limpiarLecturas() {
-        _lecturas.clear()
-    }
-}*/
-
-//Funcion muy buena bastante funciona con los 3 botones pero sin alerts
-/*class ArchivosViewModel : ViewModel() {
-
-    private val _uiMessage = mutableStateOf<String?>(null)
-    val uiMessage: State<String?> get() = _uiMessage
-
-    private val _dispositivos = mutableStateListOf<Dispositivo>()
-    val dispositivos: List<Dispositivo> get() = _dispositivos
-
-    private val _sensores = mutableStateListOf<Sensor>()
-    val sensores: List<Sensor> get() = _sensores
-
-    private val _lecturas = mutableStateListOf<Lectura>()
-    val lecturas: List<Lectura> get() = _lecturas
-
-    // -----------------------------------------------------------------------
-    // REGISTRAR DISPOSITIVO (con validación duplicados)
-    // -----------------------------------------------------------------------
-    fun registrarDispositivo(nombre: String, ubicacion: String) {
-        viewModelScope.launch {
-            try {
-                if (_dispositivos.any { it.nombre == nombre && it.ubicacion == ubicacion }) {
-                    _uiMessage.value = "⚠️ Ya existe un dispositivo con ese nombre y ubicación"
-                    return@launch
-                }
-
-                val dispositivo = Dispositivo(
-                    serie = UUID.randomUUID().toString(),
-                    nombre = nombre,
-                    ubicacion = ubicacion,
-                    tipo = "DataLogger",
-                    firmware = "v1.0",
-                    configuracion = Configuracion(
-                        intervaloSegundos = 60,
-                        transmision = "wifi",
-                        alertaUmbral = 80
-                    )
-                )
-                val response = RetrofitInstance.api.addDispositivo(dispositivo)
-                if (response.isSuccessful) {
-                    val newDevice = dispositivo.copy(dispositivoId = response.body()?.dispositivoId)
-                    _dispositivos.add(newDevice)
-                    _uiMessage.value = "✅ Dispositivo registrado correctamente"
-                } else {
-                    _uiMessage.value = "❌ Error al registrar dispositivo"
-                }
-            } catch (e: Exception) {
-                _uiMessage.value = "⚠️ ${e.message}"
-            }
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // REGISTRAR SENSOR (dinámico con validación duplicados)
-    // -----------------------------------------------------------------------
-    fun registrarSensor(
-        dispositivoId: Int,
-        nombre: String,
-        unidad: String,
-        rangoMin: Double,
-        rangoMax: Double
-    ) {
-        viewModelScope.launch {
-            try {
-                if (_sensores.any { it.dispositivoId == dispositivoId && it.nombre == nombre }) {
-                    _uiMessage.value = "⚠️ Ya existe un sensor con ese nombre en este dispositivo"
-                    return@launch
-                }
-
-                val sensor = Sensor(
-                    dispositivoId = dispositivoId,
-                    codigosensor = UUID.randomUUID().toString().take(6),
-                    nombre = nombre,
-                    unidad = unidad,
-                    factorescala = 1.0,
-                    desplazamiento = 0.0,
-                    rangomin = rangoMin,
-                    rangomax = rangoMax
-                )
-                val response = RetrofitInstance.api.addSensor(sensor)
-                if (response.isSuccessful) {
-                    val newSensor = sensor.copy(sensorId = response.body()?.sensorId)
-                    _sensores.add(newSensor)
-                    _uiMessage.value = "✅ Sensor registrado correctamente"
-                } else {
-                    _uiMessage.value = "❌ Error al registrar sensor"
-                }
-            } catch (e: Exception) {
-                _uiMessage.value = "⚠️ ${e.message}"
-            }
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // ENVIAR LECTURAS
-    // -----------------------------------------------------------------------
-    fun enviarLecturas() {
-        viewModelScope.launch {
-            try {
-                if (_lecturas.isNotEmpty()) {
-                    val response = RetrofitInstance.api.addLecturas(_lecturas)
-                    if (response.isSuccessful) {
-                        _uiMessage.value = "✅ Lecturas enviadas (${_lecturas.size})"
-                    } else {
-                        _uiMessage.value = "❌ Error al enviar lecturas"
-                    }
-                } else {
-                    _uiMessage.value = "⚠️ No hay lecturas cargadas"
-                }
-            } catch (e: Exception) {
-                _uiMessage.value = "⚠️ ${e.message}"
-            }
-        }
-    }
-
-    fun agregarLectura(lectura: Lectura) {
-        _lecturas.add(lectura)
-    }
-
-    fun limpiarLecturas() {
-        _lecturas.clear()
-    }
-
-    fun setUiMessage(message: String) {
-        _uiMessage.value = message
-    }
-}*/
 
 /*class ArchivosViewModel : ViewModel() {
 
@@ -760,7 +504,7 @@ class ArchivosViewModel : ViewModel() {
     // --------------------------
     // Helper convertir fecha
     // --------------------------
-    private fun convertirFechaCSV(fecha: String): String {
+    /*private fun convertirFechaCSV(fecha: String): String {
         return try {
             val formatoEntrada = SimpleDateFormat("MM/dd/yy hh:mm:ss a", Locale.getDefault()) // Adaptar según tu CSV
             val formatoISO = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
@@ -769,6 +513,39 @@ class ArchivosViewModel : ViewModel() {
         } catch (e: Exception) {
             fecha
         }
+    }*/
+
+    // --------------------------
+    // Helper convertir fecha a formato ISO UTC
+    // --------------------------
+    fun convertirFechaCSV(fecha: String): String {
+        val posiblesFormatos = listOf(
+            "MM/dd/yy hh:mm:ss a",   // 03/26/25 10:59:27 PM
+            "MM/dd/yyyy hh:mm:ss a", // 03/26/2025 10:59:27 PM
+            "dd/MM/yy HH:mm:ss",     // 26/03/25 22:59:27
+            "dd/MM/yyyy HH:mm:ss",   // 26/03/2025 22:59:27
+            "yyyy-MM-dd HH:mm:ss",   // 2025-03-26 22:59:27
+            "yyyy/MM/dd HH:mm:ss"    // 2025/03/26 22:59:27
+        )
+
+        for (formato in posiblesFormatos) {
+            try {
+                val sdfEntrada = SimpleDateFormat(formato, Locale.getDefault())
+                sdfEntrada.timeZone = TimeZone.getTimeZone("America/Managua") // ajusta según tu zona
+                val fechaParseada = sdfEntrada.parse(fecha)
+                if (fechaParseada != null) {
+                    val sdfSalida = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+                    sdfSalida.timeZone = TimeZone.getTimeZone("UTC")
+                    return sdfSalida.format(fechaParseada)
+                }
+            } catch (_: Exception) {
+                // Intentar con el siguiente formato
+            }
+        }
+
+        // Si no pudo parsear, devolver tal cual (para depuración)
+        println("⚠️ No se pudo convertir fecha: '$fecha'")
+        return fecha
     }
 
     // -------------------------------
