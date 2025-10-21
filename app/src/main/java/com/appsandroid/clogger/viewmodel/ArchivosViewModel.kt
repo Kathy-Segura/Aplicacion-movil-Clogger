@@ -563,4 +563,8 @@ class ArchivosViewModel : ViewModel() {
     fun setUiMessage(message: String) {
         _uiMessage.value = message
     }
+
+    fun clearMessage() {
+        TODO("Not yet implemented")
+    }
 }

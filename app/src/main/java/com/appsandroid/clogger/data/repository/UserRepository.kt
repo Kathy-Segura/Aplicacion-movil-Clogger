@@ -4,6 +4,7 @@ import com.appsandroid.clogger.api.ApiService
 import com.appsandroid.clogger.data.model.LoginRequest
 import com.appsandroid.clogger.data.model.RegisterRequest
 import com.appsandroid.clogger.login.SessionManager
+import com.appsandroid.clogger.utils.getFriendlyErrorMessage
 
 class UserRepository(
     private val api: ApiService,
@@ -24,7 +25,7 @@ class UserRepository(
         }
     }
 
-    suspend fun registerUser(username: String, email: String, password: String): Result<Boolean> {
+    /*suspend fun registerUser(username: String, email: String, password: String): Result<Boolean> {
         return try {
             val response = api.register(RegisterRequest(username, email, password))
             if (response.usuarioid > 0) {
@@ -34,6 +35,21 @@ class UserRepository(
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }*/
+
+    suspend fun registerUser(username: String, email: String, password: String): Result<Boolean> {
+        return try {
+            val response = api.register(RegisterRequest(username, email, password))
+            if (response.usuarioid > 0) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("No se pudo completar el registro. Intenta nuevamente."))
+            }
+        } catch (e: Exception) {
+            // Convertimos el mensaje técnico en uno entendible
+            val friendlyMessage = getFriendlyErrorMessage(e)
+            Result.failure(Exception(friendlyMessage))
         }
     }
 

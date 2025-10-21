@@ -482,7 +482,9 @@ fun LoginScreen(
 
         Button(
             onClick = { viewModel.login() },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
             enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D9DFB))
         ) {
@@ -501,11 +503,3 @@ fun LoginScreen(
     }
 }
 
-fun getFriendlyErrorMessage(exception: Throwable?): String {
-    return when (exception?.message) {
-        "HTTP 401" -> "Usuario o contraseña incorrectos"
-        "HTTP 403" -> "Acceso denegado"
-        "HTTP 500" -> "Error del servidor, intenta más tarde"
-        else -> exception?.message ?: "Error desconocido"
-    }
-}

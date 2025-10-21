@@ -273,12 +273,33 @@ fun ArchivosScreen(
     }
 
     // Mostrar tarjeta cuando hay mensaje
-    LaunchedEffect(uiMessage) {
+    /*LaunchedEffect(uiMessage) {
         showMessageCard = !uiMessage.isNullOrEmpty()
         if (showMessageCard) {
             delay(4000L)
             showMessageCard = false
             viewModel.setUiMessage("") // limpiar mensaje
+        }
+    }*/
+
+    // Controlar cuándo mostrar u ocultar la tarjeta de mensaje
+    /*LaunchedEffect(uiMessage) {
+        if (!uiMessage.isNullOrEmpty()) {
+            showMessageCard = true
+            delay(4000L) // espera 4 segundos
+            showMessageCard = false
+            delay(300L) // 🔹 Espera un poco a que desaparezca la animación
+            viewModel.setUiMessage(null) // limpiar mensaje de forma segura
+        }
+    }*/
+
+    LaunchedEffect(uiMessage) {
+        val msg = uiMessage
+        if (!msg.isNullOrBlank()) {
+            showMessageCard = true
+            delay(3500L)
+            showMessageCard = false
+            viewModel.clearMessage()
         }
     }
 
@@ -630,21 +651,25 @@ fun ArchivosScreen(
 
         // -------------------------------
         // Tarjeta de mensaje flotante (igual que antes)
-        // -------------------------------
+        // ------------------------------
         AnimatedVisibility(
-            visible = showMessageCard && !uiMessage.isNullOrEmpty(),
+            visible = showMessageCard && !uiMessage.isNullOrBlank(),
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 16.dp)
         ) {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = if (uiMessage?.startsWith("✅") == true) Color(0xFF4CAF50) else Color(0xFFD32F2F)
+                    containerColor = if (uiMessage?.startsWith("✅") == true)
+                        Color(0xFF4CAF50) else Color(0xFFD32F2F)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .clickable { showMessageCard = false; viewModel.setUiMessage("") },
+                    .clickable {
+                        showMessageCard = false
+                        viewModel.clearMessage()
+                    },
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
                 Text(

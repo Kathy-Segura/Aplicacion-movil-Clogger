@@ -3,7 +3,7 @@ package com.appsandroid.clogger.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appsandroid.clogger.data.repository.UserRepository
-import com.appsandroid.clogger.login.getFriendlyErrorMessage
+import com.appsandroid.clogger.utils.getFriendlyErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -92,11 +92,11 @@ class LoginViewModel(private val repo: UserRepository) : ViewModel() {
         }
     }
 
-    fun resetLogin() {
+   /* fun resetLogin() {
         _loginSuccess.value = false
         _errorMessage.value = null
         loginInput.value = ""
         password.value = ""
-    }
+    }*/
 
 }

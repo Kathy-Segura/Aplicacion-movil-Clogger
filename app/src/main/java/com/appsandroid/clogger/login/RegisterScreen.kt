@@ -513,7 +513,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "Create an Account",
+            "Crear una cuenta",
             style = MaterialTheme.typography.headlineMedium,
             color = Color(0xFF2D9DFB)
         )
@@ -524,7 +524,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username", color = Color(0xFF2D9DFB)) },
+            label = { Text("Usuario", color = Color(0xFF2D9DFB)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             isError = showError && username.isEmpty(),
@@ -543,7 +543,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email", color = Color(0xFF2D9DFB)) },
+            label = { Text("Correo", color = Color(0xFF2D9DFB)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             isError = showError && email.isEmpty(),
@@ -580,7 +580,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password", color = Color(0xFF2D9DFB)) },
+            label = { Text("Contraseña", color = Color(0xFF2D9DFB)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -611,7 +611,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = { Text("Confirm Password", color = Color(0xFF2D9DFB)) },
+            label = { Text("Confirmar Contraseña", color = Color(0xFF2D9DFB)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -678,14 +678,14 @@ fun RegisterScreen(
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                Text("Sign Up", color = Color.White)
+                Text("Registrar Sesión", color = Color.White)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(onClick = onLoginClick) {
-            Text("Already have an account? Login", color = Color(0xFF2D9DFB))
+            Text("¿Ya tienes una cuenta? Iniciar", color = Color(0xFF2D9DFB))
         }
     }
 }
