@@ -25,18 +25,6 @@ class UserRepository(
         }
     }
 
-    /*suspend fun registerUser(username: String, email: String, password: String): Result<Boolean> {
-        return try {
-            val response = api.register(RegisterRequest(username, email, password))
-            if (response.usuarioid > 0) {
-                Result.success(true)
-            } else {
-                Result.failure(Exception("Error en el registro"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }*/
 
     suspend fun registerUser(username: String, email: String, password: String): Result<Boolean> {
         return try {
@@ -51,6 +39,16 @@ class UserRepository(
             val friendlyMessage = getFriendlyErrorMessage(e)
             Result.failure(Exception(friendlyMessage))
         }
+    }
+
+    // Guardar o eliminar credenciales (para "Recordar usuario y contraseña")
+    suspend fun saveCredentials(username: String, password: String, remember: Boolean) {
+        session.saveCredentials(username, password, remember)
+    }
+
+    // Recuperar credenciales guardadas (para autocompletar al iniciar la app)
+    suspend fun getSavedCredentials(): Pair<String, String>? {
+        return session.getSavedCredentials()
     }
 
     suspend fun logout() {

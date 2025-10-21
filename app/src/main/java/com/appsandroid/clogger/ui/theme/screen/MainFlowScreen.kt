@@ -52,6 +52,7 @@ import com.appsandroid.clogger.viewmodel.NotificationViewModelFactory
 import com.appsandroid.clogger.viewmodel.WeatherViewModel
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.tasks.await
+import com.appsandroid.clogger.login.SessionManager
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,11 +89,7 @@ fun MainFlowScreen() {
             weatherViewModel.fetchWeather(latitude!!, longitude!!)
         }
     }
-    /*// LLamada al las notificaciones
-    LaunchedEffect(Unit) {
-        NotificationScheduler.scheduleDailyAtFive(context)
-        NotificationScheduler.scheduleDailyAtElevenFifty(context)
-    }*/
+
     Scaffold(
         topBar = {
             if (isLoggedIn) { // Solo mostrar TopBar si ya inició sesión

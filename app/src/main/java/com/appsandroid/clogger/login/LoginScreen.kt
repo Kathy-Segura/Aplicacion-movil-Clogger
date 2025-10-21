@@ -478,7 +478,25 @@ fun LoginScreen(
             Text(errorMessage ?: "", color = Color.Red, fontSize = 14.sp)
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // Checkbox de "Recordar usuario y contraseña"
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 16.dp)
+        ) {
+            Checkbox(
+                checked = viewModel.rememberMe.collectAsState().value,
+                onCheckedChange = { viewModel.onRememberMeChange(it) },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = Color(0xFF2D9DFB),         //  Fondo cuando está marcado
+                    uncheckedColor = Color(0xFF2D9DFB),       //  Borde cuando está desmarcado
+                    checkmarkColor = Color.White,                   // Color del "check"
+                    disabledCheckedColor = Color(0xFF90CAF9),  // opcional: más claro si está deshabilitado
+                )
+            )
+            Text("Recordar usuario y contraseña", color = Color(0xFF2D9DFB))
+        }
 
         Button(
             onClick = { viewModel.login() },
@@ -491,7 +509,7 @@ fun LoginScreen(
             if (isLoading) {
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
             } else {
-                Text("Login", color = Color.White)
+                Text("Iniciar", color = Color.White)
             }
         }
 

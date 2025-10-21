@@ -51,7 +51,9 @@ import kotlinx.coroutines.launch
     }
 }*/
 
+
 class LoginViewModel(private val repo: UserRepository) : ViewModel() {
+
     private val _loginSuccess = MutableStateFlow(false)
     val loginSuccess: StateFlow<Boolean> = _loginSuccess
 
@@ -61,13 +63,39 @@ class LoginViewModel(private val repo: UserRepository) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // Estados de campos de texto
+    // 🔹 Estados de campos de texto
     val loginInput = MutableStateFlow("")
     val password = MutableStateFlow("")
 
-    fun onLoginInputChange(value: String) { loginInput.value = value }
-    fun onPasswordChange(value: String) { password.value = value }
+    // 🔹 Estado del checkbox "Recordar usuario y contraseña"
+    private val _rememberMe = MutableStateFlow(false)
+    val rememberMe: StateFlow<Boolean> = _rememberMe
 
+    fun onRememberMeChange(value: Boolean) {
+        _rememberMe.value = value
+    }
+
+    fun onLoginInputChange(value: String) {
+        loginInput.value = value
+    }
+
+    fun onPasswordChange(value: String) {
+        password.value = value
+    }
+
+    // ✅ Al inicializar, intenta cargar credenciales si fueron guardadas
+    init {
+        viewModelScope.launch {
+            val creds = repo.getSavedCredentials()
+            if (creds != null) {
+                loginInput.value = creds.first
+                password.value = creds.second
+                _rememberMe.value = true
+            }
+        }
+    }
+
+    // ✅ Lógica principal de login
     fun login() {
         val user = loginInput.value
         val pass = password.value
@@ -83,6 +111,8 @@ class LoginViewModel(private val repo: UserRepository) : ViewModel() {
             _isLoading.value = false
 
             if (result.isSuccess) {
+                // Guardar o limpiar credenciales según estado del checkbox
+                repo.saveCredentials(user, pass, _rememberMe.value)
                 _loginSuccess.value = true
                 _errorMessage.value = null
             } else {
@@ -92,11 +122,19 @@ class LoginViewModel(private val repo: UserRepository) : ViewModel() {
         }
     }
 
-   /* fun resetLogin() {
+    fun resetLogin() {
         _loginSuccess.value = false
         _errorMessage.value = null
         loginInput.value = ""
         password.value = ""
-    }*/
+    }
 
+    // Manejo de mensajes de error comprensibles
+    private fun getFriendlyErrorMessage(e: Throwable?): String {
+        return when (e?.message) {
+            "timeout" -> "Tiempo de espera agotado. Verifica tu conexión."
+            "Usuario o contraseña incorrectos" -> "Usuario o contraseña incorrectos."
+            else -> "Error al iniciar sesión. Intenta nuevamente."
+        }
+    }
 }

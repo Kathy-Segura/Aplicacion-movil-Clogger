@@ -678,7 +678,7 @@ fun RegisterScreen(
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                Text("Registrar Sesión", color = Color.White)
+                Text("Registrarse", color = Color.White)
             }
         }
 
