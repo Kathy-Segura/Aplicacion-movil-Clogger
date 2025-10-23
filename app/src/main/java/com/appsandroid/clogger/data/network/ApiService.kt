@@ -14,8 +14,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
+//CONSUMIR TODOS LOS ENPOINTS DE LA API
 interface ApiService {
-    //CONSUMIR TODOS LOS ENPOINTS DE LA API por el momento son de ejemplo
 
     @POST("login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
@@ -38,6 +38,9 @@ interface ApiService {
     @POST("lecturas/batch")
     suspend fun addLecturas(@Body lecturas: List<Lectura>): Response<Map<String, Int>>
 
+    @GET("lecturas")
+    suspend fun getLecturas(): Response<List<Lectura>>
+
     // Agregar los enpoints de health, charts y export lecturas.
     // @GET("charts")
     // @GET("/export/lecturas")
@@ -45,5 +48,6 @@ interface ApiService {
     //Enpoint de Prueba para los graficos
     @GET("/apiolap/cubedata")
     fun getBartChartData(): Call<List<BartChartData>>
+
 
 }

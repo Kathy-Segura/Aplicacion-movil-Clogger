@@ -29,6 +29,26 @@ android {
             )
         }
     }
+
+    // Este bloque evita todos los conflictos META-INF
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0",
+                "META-INF/io.netty.versions.properties", //  este es el nuevo
+                "META-INF/INDEX.LIST"
+            )
+        }
+    }
+
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -72,6 +92,7 @@ dependencies {
     implementation(libs.androidx.room.runtime.android)
     implementation(libs.play.services.location)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.firebase.appdistribution.gradle)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
