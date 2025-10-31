@@ -84,7 +84,7 @@ data class Sensor(
     val sensorId: Int? = null // lo devuelve el backend
 )*/
 
-data class Lectura(
+/*data class Lectura(
     @SerializedName("dispositivoid")
     val dispositivoId: Int,
     @SerializedName("sensorid")
@@ -92,4 +92,13 @@ data class Lectura(
     val fechahora: String,
     val valor: Double,
     val calidad: Int
+)*/
+
+data class Lectura(
+    @SerializedName("lecturaid") val lecturaId: Int? = null,
+    @SerializedName("dispositivoid") val dispositivoId: Int,
+    @SerializedName("sensorid") val sensorId: Int,
+    @SerializedName("fechahora") val fechahora: String,
+    @SerializedName("valor") val valor: Double,
+    @SerializedName("calidad") val calidad: Int
 )

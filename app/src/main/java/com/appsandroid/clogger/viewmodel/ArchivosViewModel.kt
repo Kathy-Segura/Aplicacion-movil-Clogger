@@ -565,6 +565,6 @@ class ArchivosViewModel : ViewModel() {
     }
 
     fun clearMessage() {
-        TODO("Not yet implemented")
+        _uiMessage.value = null
     }
 }

@@ -13,6 +13,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 //CONSUMIR TODOS LOS ENPOINTS DE LA API
 interface ApiService {
@@ -38,8 +39,17 @@ interface ApiService {
     @POST("lecturas/batch")
     suspend fun addLecturas(@Body lecturas: List<Lectura>): Response<Map<String, Int>>
 
+    /*@GET("lecturas")
+    suspend fun getLecturas(): Response<List<Lectura>>*/
+
     @GET("lecturas")
-    suspend fun getLecturas(): Response<List<Lectura>>
+    suspend fun getLecturas(
+        @Query("dispositivoid") dispositivoId: Int? = null,
+        @Query("sensorid") sensorId: Int? = null,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): Response<List<Lectura>>
+
 
     // Agregar los enpoints de health, charts y export lecturas.
     // @GET("charts")
