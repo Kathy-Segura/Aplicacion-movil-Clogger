@@ -16,11 +16,10 @@ import com.appsandroid.clogger.data.model.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
-class GraficosViewModel(
-    private val repository: DashboardRepository
-) : ViewModel() {
+class GraficosViewModel(private val repository: DashboardRepository) : ViewModel() {
 
     private val _dispositivos = MutableStateFlow<List<Dispositivo>>(emptyList())
     val dispositivos: StateFlow<List<Dispositivo>> = _dispositivos
@@ -34,73 +33,109 @@ class GraficosViewModel(
     private val _selectedUbicacion = MutableStateFlow<String?>(null)
     val selectedUbicacion: StateFlow<String?> = _selectedUbicacion
 
-    private val _selectedRango = MutableStateFlow("Última semana")
+    private val _selectedRango = MutableStateFlow<String>("Última semana")
     val selectedRango: StateFlow<String> = _selectedRango
 
+    // Estados de UI
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    // Rango personalizado (nullable)
+    private val _customDesde = MutableStateFlow<Long?>(null) // epoch millis
+    private val _customHasta = MutableStateFlow<Long?>(null)
+
     init {
-        cargarDatos()
+        // Cargar dispositivos y sensores al iniciar
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                _dispositivos.value = repository.getDispositivos()
+                _sensores.value = repository.getSensores()
+                // no cargamos lecturas todavía hasta que elija filtros
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al cargar datos: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
-    fun cargarDatos() {
+    fun cargarDatos(forceRefresh: Boolean = false) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
             try {
-                val dispositivosBackend = repository.getDispositivos()
-                _dispositivos.value = dispositivosBackend
+                val dispositivoId = _dispositivos.value.find { it.ubicacion == _selectedUbicacion.value }?.dispositivoId
+                // calcular desde/hasta segun rango o custom
+                val (desdeIso, hastaIso) = calcularFechasParaConsulta()
 
-                val sensoresBackend = repository.getSensores()
-                _sensores.value = sensoresBackend
-
-                val lecturasBackend = repository.getLecturas()
-                _lecturas.value = lecturasBackend
-
-                filtrarLecturas()
+                val lect = repository.getLecturas(dispositivoId, null, desdeIso, hastaIso)
+                _lecturas.value = lect
             } catch (e: Exception) {
-                e.printStackTrace()
+                _errorMessage.value = "Error al cargar lecturas: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
     fun seleccionarUbicacion(ubicacion: String) {
         _selectedUbicacion.value = ubicacion
-        filtrarLecturas()
     }
 
     fun seleccionarRango(rango: String) {
         _selectedRango.value = rango
-        filtrarLecturas()
+        // limpiar custom cuando se selecciona rango predefinido
+        _customDesde.value = null
+        _customHasta.value = null
     }
 
-    private fun filtrarLecturas() {
-        val ubicacion = _selectedUbicacion.value
-        val rango = _selectedRango.value
+    fun setCustomRange(desdeEpoch: Long, hastaEpoch: Long) {
+        _customDesde.value = desdeEpoch
+        _customHasta.value = hastaEpoch
+        _selectedRango.value = "Personalizado"
+    }
 
-        val dispositivosFiltrados = if (ubicacion != null) {
-            _dispositivos.value.filter { it.ubicacion == ubicacion }
-        } else _dispositivos.value
-
-        // Calcula la fecha límite según el rango seleccionado usando Calendar
-        val calendar = Calendar.getInstance()
-        when (rango) {
-            "Última semana" -> calendar.add(Calendar.WEEK_OF_YEAR, -1)
-            "Último mes" -> calendar.add(Calendar.MONTH, -1)
-            "Último trimestre" -> calendar.add(Calendar.MONTH, -3)
-        }
-
-        val fechaLimite = calendar.time
+    private fun calcularFechasParaConsulta(): Pair<String?, String?> {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+        val calendar = Calendar.getInstance()
+        val hasta = calendar.time
 
-        val lecturasFiltradas = _lecturas.value.filter { lectura ->
-            try {
-                val fechaLectura = dateFormat.parse(lectura.fechahora)
-                fechaLectura != null &&
-                        fechaLectura.after(fechaLimite) &&
-                        dispositivosFiltrados.any { it.dispositivoId == lectura.dispositivoId }
-            } catch (e: Exception) {
-                false
+        val desdeDate = when (_selectedRango.value) {
+            "Última semana" -> {
+                calendar.add(Calendar.WEEK_OF_YEAR, -1)
+                calendar.time
+            }
+            "Último mes" -> {
+                calendar.add(Calendar.MONTH, -1)
+                calendar.time
+            }
+            "Último trimestre" -> {
+                calendar.add(Calendar.MONTH, -3)
+                calendar.time
+            }
+            "Personalizado" -> {
+                val desdeMillis = _customDesde.value
+                val hastaMillis = _customHasta.value
+                if (desdeMillis != null && hastaMillis != null) {
+                    val d = Date(desdeMillis)
+                    val h = Date(hastaMillis)
+                    return Pair(dateFormat.format(d), dateFormat.format(h))
+                } else {
+                    // si falla fallback última semana
+                    calendar.add(Calendar.WEEK_OF_YEAR, -1)
+                    calendar.time
+                }
+            }
+            else -> {
+                calendar.add(Calendar.WEEK_OF_YEAR, -1)
+                calendar.time
             }
         }
-
-        _lecturas.value = lecturasFiltradas
+        return Pair(dateFormat.format(desdeDate), dateFormat.format(hasta))
     }
 
     fun obtenerPromedio(sensorNombre: String): Double {
@@ -112,4 +147,4 @@ class GraficosViewModel(
 
     val progresoLecturas: Float
         get() = (_lecturas.value.size % 100).toFloat()
-   }
+}

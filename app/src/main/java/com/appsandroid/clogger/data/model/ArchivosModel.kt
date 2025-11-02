@@ -100,5 +100,6 @@ data class Lectura(
     @SerializedName("sensorid") val sensorId: Int,
     @SerializedName("fechahora") val fechahora: String,
     @SerializedName("valor") val valor: Double,
-    @SerializedName("calidad") val calidad: Int
+    @SerializedName("calidad") val calidad: Int,
+    val sensorNombre: String? = null
 )

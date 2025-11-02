@@ -502,23 +502,9 @@ class ArchivosViewModel : ViewModel() {
     }
 
     // --------------------------
-    // Helper convertir fecha
-    // --------------------------
-    /*private fun convertirFechaCSV(fecha: String): String {
-        return try {
-            val formatoEntrada = SimpleDateFormat("MM/dd/yy hh:mm:ss a", Locale.getDefault()) // Adaptar según tu CSV
-            val formatoISO = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            val date = formatoEntrada.parse(fecha)
-            formatoISO.format(date!!)
-        } catch (e: Exception) {
-            fecha
-        }
-    }*/
-
-    // --------------------------
     // Helper convertir fecha a formato ISO UTC
     // --------------------------
-    fun convertirFechaCSV(fecha: String): String {
+    /*fun convertirFechaCSV(fecha: String): String {
         val posiblesFormatos = listOf(
             "MM/dd/yy hh:mm:ss a",   // 03/26/25 10:59:27 PM
             "MM/dd/yyyy hh:mm:ss a", // 03/26/2025 10:59:27 PM
@@ -545,6 +531,51 @@ class ArchivosViewModel : ViewModel() {
 
         // Si no pudo parsear, devolver tal cual (para depuración)
         println("⚠️ No se pudo convertir fecha: '$fecha'")
+        return fecha
+    }*/
+
+    // --------------------------
+    // Conversión de fechas desde CSV a formato ISO UTC
+    // --------------------------
+
+    fun convertirFechaCSV(fecha: String): String {
+        // Lista de formatos posibles (añadimos variantes con AM/PM y 24h)
+        val posiblesFormatos = listOf(
+            "MM/dd/yy hh:mm:ss a",    // 09/20/24 05:04:55 PM
+            "MM/dd/yyyy hh:mm:ss a",  // 09/20/2024 05:04:55 PM
+            "MM/dd/yy HH:mm:ss",      // 09/20/24 17:04:55
+            "MM/dd/yyyy HH:mm:ss",    // 09/20/2024 17:04:55
+            "dd/MM/yy HH:mm:ss",      // 20/09/24 17:04:55
+            "dd/MM/yyyy HH:mm:ss",    // 20/09/2024 17:04:55
+            "yyyy-MM-dd HH:mm:ss",    // 2024-09-20 17:04:55
+            "yyyy/MM/dd HH:mm:ss"     // 2024/09/20 17:04:55
+        )
+
+        // Forzamos locale inglés (para interpretar "AM"/"PM") y español por fallback
+        val locales = listOf(Locale.ENGLISH, Locale("es", "ES"))
+
+        for (formato in posiblesFormatos) {
+            for (loc in locales) {
+                try {
+                    val sdfEntrada = SimpleDateFormat(formato, loc)
+                    sdfEntrada.timeZone = TimeZone.getTimeZone("America/Managua") // hora local
+                    val fechaParseada = sdfEntrada.parse(fecha)
+                    if (fechaParseada != null) {
+                        // Convertir a formato UTC ISO 8601 con zona explícita
+                        val sdfSalida = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH)
+                        sdfSalida.timeZone = TimeZone.getTimeZone("UTC")
+                        val fechaFinal = sdfSalida.format(fechaParseada)
+                        println("📅 Fecha CSV '$fecha' convertida correctamente → $fechaFinal")
+                        return fechaFinal
+                    }
+                } catch (_: Exception) {
+                    // intentar siguiente formato o locale
+                }
+            }
+        }
+
+        // Si ningún formato coincide, registrar advertencia y devolver sin modificar
+        println("⚠️ No se pudo convertir fecha CSV: '$fecha'. Se enviará tal cual al backend.")
         return fecha
     }
 

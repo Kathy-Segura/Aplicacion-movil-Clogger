@@ -48,9 +48,9 @@ class DashboardRepository {
         } catch (_: Exception) { false }
     }
 
-    suspend fun getLecturas(): List<Lectura> {
+    suspend fun getLecturas(dispositivoId: Int? = null, sensorId: Int? = null, desde: String? = null, hasta: String? = null): List<Lectura> {
         return try {
-            val response = api.getLecturas()
+            val response = RetrofitInstance.api.getLecturas(dispositivoId, sensorId, desde, hasta)
             if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
         } catch (_: Exception) { emptyList() }
     }
