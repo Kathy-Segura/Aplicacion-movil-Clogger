@@ -70,6 +70,17 @@ data class Sensor(
     val sensorId: Int? = null
 )
 
+data class Lectura(
+    @SerializedName("lecturaid") val lecturaId: Int? = null,
+    @SerializedName("dispositivoid") val dispositivoId: Int,
+    @SerializedName("sensorid") val sensorId: Int,
+    @SerializedName("fechahora") val fechahora: String,
+    @SerializedName("temperatura") val temperatura: Double? = null,
+    @SerializedName("humedad") val humedad: Double? = null,
+    @SerializedName("calidad") val calidad: Int,
+    val sensorNombre: String? = null
+)
+
 /*data class Sensor(
     @SerializedName("dispositivoid")
     val dispositivoId: Int,
@@ -93,13 +104,3 @@ data class Sensor(
     val valor: Double,
     val calidad: Int
 )*/
-
-data class Lectura(
-    @SerializedName("lecturaid") val lecturaId: Int? = null,
-    @SerializedName("dispositivoid") val dispositivoId: Int,
-    @SerializedName("sensorid") val sensorId: Int,
-    @SerializedName("fechahora") val fechahora: String,
-    @SerializedName("valor") val valor: Double,
-    @SerializedName("calidad") val calidad: Int,
-    val sensorNombre: String? = null
-)

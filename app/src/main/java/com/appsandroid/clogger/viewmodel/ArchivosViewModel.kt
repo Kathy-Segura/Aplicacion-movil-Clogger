@@ -432,8 +432,7 @@ class ArchivosViewModel : ViewModel() {
     fun cargarLecturasDesdeLineas(
         lineas: List<String>,
         dispositivoId: Int,
-        sensorIdTemp: Int,
-        sensorIdHum: Int
+        sensorId: Int
     ) {
         limpiarLecturas()
 
@@ -441,28 +440,18 @@ class ArchivosViewModel : ViewModel() {
             val parts = line.split(",")
             if (parts.size >= 3) {
                 val fechaHora = convertirFechaCSV(parts[0].trim())
-                val tempValor = parts[1].trim().toDoubleOrNull()
-                val humValor = parts[2].trim().toDoubleOrNull()
+                val tempValor = parts.getOrNull(1)?.trim()?.toDoubleOrNull()
+                val humValor = parts.getOrNull(2)?.trim()?.toDoubleOrNull()
 
-                tempValor?.let {
+                // 🔹 Crear UNA sola lectura con ambos valores
+                if (tempValor != null || humValor != null) {
                     agregarLectura(
                         Lectura(
                             dispositivoId = dispositivoId,
-                            sensorId = sensorIdTemp,
+                            sensorId = sensorId,
                             fechahora = fechaHora,
-                            valor = it,
-                            calidad = 1
-                        )
-                    )
-                }
-
-                humValor?.let {
-                    agregarLectura(
-                        Lectura(
-                            dispositivoId = dispositivoId,
-                            sensorId = sensorIdHum,
-                            fechahora = fechaHora,
-                            valor = it,
+                            temperatura = tempValor,
+                            humedad = humValor,
                             calidad = 1
                         )
                     )

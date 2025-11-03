@@ -358,20 +358,17 @@ fun ArchivosScreen(
 
                             // 🔹 Detectar automáticamente el delimitador
                             val delimiter = when {
-                                line.contains("\t") -> "\t"         // tabulaciones (Excel .txt)
-                                line.contains(";") -> ";"           // punto y coma (Excel .csv europeo)
-                                line.contains(",") -> ","           // coma (CSV clásico)
-                                else -> "\\s+"                      // espacios múltiples
+                                line.contains("\t") -> "\t"
+                                line.contains(";") -> ";"
+                                line.contains(",") -> ","
+                                else -> "\\s+"
                             }
 
-                            // 🔹 Dividir columnas
                             val cols = line.split(Regex(delimiter))
 
-                            // Ejemplo esperado:
-                            // [0]=1, [1]=03/26/25, [2]=10:59:27, [3]=PM, [4]=19.297, [5]=100
+                            // Ejemplo esperado: N°, Fecha, Hora, Temp, Humedad
                             if (cols.size >= 4) {
                                 try {
-                                    // Construir fecha/hora (acepta varios formatos)
                                     val fechaHora = buildString {
                                         append(cols.getOrNull(1)?.trim() ?: "")
                                         append(" ")
@@ -384,43 +381,21 @@ fun ArchivosScreen(
                                         }
                                     }.trim()
 
-                                    // 🔹 Buscar valores numéricos
-                                    val tempValor = cols.findLast { it.trim().toDoubleOrNull() != null }?.toDoubleOrNull()
-                                    val humValor = cols.reversed().drop(1).find { it.trim().toDoubleOrNull() != null }?.toDoubleOrNull()
+                                    val tempValor = cols.find { it.trim().toDoubleOrNull() != null }?.toDoubleOrNull()
+                                    val humValor = cols.reversed().find { it.trim().toDoubleOrNull() != null }?.toDoubleOrNull()
 
-                                    // 🔹 Agregar temperatura
-                                    tempValor?.let { t ->
-                                        selectedDispositivo?.dispositivoId?.let { dId ->
-                                            selectedSensor?.sensorId?.let { sId ->
-                                                lecturas.add(
-                                                    Lectura(
-                                                        dispositivoId = dId,
-                                                        sensorId = sId,
-                                                        fechahora = viewModel.convertirFechaCSV(fechaHora),  // 🔹 Convertimos la fecha antes de crear la lectura
-                                                        //fechahora = fechaHora,
-                                                        valor = t,
-                                                        calidad = 1
-                                                    )
+                                    selectedDispositivo?.dispositivoId?.let { dId ->
+                                        selectedSensor?.sensorId?.let { sId ->
+                                            lecturas.add(
+                                                Lectura(
+                                                    dispositivoId = dId,
+                                                    sensorId = sId,
+                                                    fechahora = viewModel.convertirFechaCSV(fechaHora),
+                                                    temperatura = tempValor,
+                                                    humedad = humValor,
+                                                    calidad = 1
                                                 )
-                                            }
-                                        }
-                                    }
-
-                                    // 🔹 Agregar humedad (si existe)
-                                    humValor?.let { h ->
-                                        selectedDispositivo?.dispositivoId?.let { dId ->
-                                            selectedSensor?.sensorId?.let { sId ->
-                                                lecturas.add(
-                                                    Lectura(
-                                                        dispositivoId = dId,
-                                                        sensorId = sId,
-                                                        fechahora = viewModel.convertirFechaCSV(fechaHora), // 🔹 Convertimos la fecha antes de crear la lectura
-                                                        //fechahora = fechaHora,
-                                                        valor = h,
-                                                        calidad = 1
-                                                    )
-                                                )
-                                            }
+                                            )
                                         }
                                     }
 
@@ -431,7 +406,6 @@ fun ArchivosScreen(
                         }
                     }
 
-                    // 🔹 Mostrar resultado
                     lecturas.forEach { viewModel.agregarLectura(it) }
                     val count = lecturas.size
                     viewModel.setUiMessage(

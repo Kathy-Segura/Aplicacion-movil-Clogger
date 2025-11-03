@@ -138,10 +138,35 @@ class GraficosViewModel(private val repository: DashboardRepository) : ViewModel
         return Pair(dateFormat.format(desdeDate), dateFormat.format(hasta))
     }
 
-    fun obtenerPromedio(sensorNombre: String): Double {
+    /*fun obtenerPromedio(sensorNombre: String): Double {
         val sensoresFiltrados = _sensores.value.filter { it.nombre.equals(sensorNombre, ignoreCase = true) }
         val sensorIds = sensoresFiltrados.mapNotNull { it.sensorId }
         val valores = _lecturas.value.filter { it.sensorId in sensorIds }.map { it.valor }
+        return if (valores.isNotEmpty()) valores.average() else 0.0
+    }*/
+
+    fun obtenerPromedio(sensorNombre: String): Double {
+        val sensoresFiltrados = _sensores.value.filter { it.nombre.equals(sensorNombre, ignoreCase = true) }
+        val sensorIds = sensoresFiltrados.mapNotNull { it.sensorId }
+
+        // 🔹 Filtramos las lecturas que correspondan a los sensores encontrados
+        val lecturasFiltradas = _lecturas.value.filter { it.sensorId in sensorIds }
+
+        // 🔹 Seleccionamos la columna correcta según el tipo de sensor
+        val valores = when {
+            sensorNombre.contains("temp", ignoreCase = true) ||
+                    sensorNombre.contains("temperatura", ignoreCase = true) -> {
+                lecturasFiltradas.mapNotNull { it.temperatura }
+            }
+
+            sensorNombre.contains("hum", ignoreCase = true) ||
+                    sensorNombre.contains("humedad", ignoreCase = true) -> {
+                lecturasFiltradas.mapNotNull { it.humedad }
+            }
+
+            else -> emptyList()
+        }
+
         return if (valores.isNotEmpty()) valores.average() else 0.0
     }
 
