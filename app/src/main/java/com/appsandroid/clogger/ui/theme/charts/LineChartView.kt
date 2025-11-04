@@ -218,14 +218,15 @@ fun LineChartView(lecturas: List<Lectura>, modifier: Modifier = Modifier) {
         Text(
             text = "Temperatura (°C)",
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFF44336),
+            color = Color(0xFF03A9F4), // 0xFFF44336 rojo
             fontSize = 18.sp,
             modifier = Modifier.padding(start = 8.dp)
         )
         LineChartSingleView(
-            lecturas = lecturasReducidas.filter { it.temperatura != null },
-            color = android.graphics.Color.rgb(244, 67, 54),
-            tipoDato = "temperatura"
+            lecturas = lecturasReducidas.filter { it.humedad != null }, // ← antes era temperatura
+           // color = android.graphics.Color.rgb(244, 67, 54),
+            color = android.graphics.Color.rgb(3, 169, 244), // celeste
+            tipoDato = "humedad" // ← antes era "temperatura"
         )
 
         // 🔹 Gráfico de Humedad
@@ -237,9 +238,9 @@ fun LineChartView(lecturas: List<Lectura>, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(start = 8.dp)
         )
         LineChartSingleView(
-            lecturas = lecturasReducidas.filter { it.humedad != null },
+            lecturas = lecturasReducidas.filter { it.temperatura != null }, // ← antes era humedad
             color = android.graphics.Color.rgb(0, 188, 212),
-            tipoDato = "humedad"
+            tipoDato = "temperatura" // ← antes era "humedad"
         )
     }
 }

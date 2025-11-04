@@ -340,7 +340,7 @@ fun ArchivosScreen(
     // --------------------------
     // CSV / Excel Launcher universal
     // --------------------------
-    val csvLauncher = rememberLauncherForActivityResult(
+    /*val csvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri: Uri? ->
             uri?.let {
@@ -418,7 +418,156 @@ fun ArchivosScreen(
                 }
             }
         }
+    )*/
+
+    val csvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                try {
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val lecturas = mutableListOf<Lectura>()
+                    var lineNumber = 0
+
+                    reader.useLines { lines ->
+                        lines.forEach { rawLine ->
+                            lineNumber++
+                            val line = rawLine.trim()
+
+                            // Saltar líneas vacías o encabezados típicos
+                            if (line.isEmpty() || line.contains("Fecha", true) || line.contains("Temper", true)) return@forEach
+
+                            // Detectar delimitador
+                            val delimiter = when {
+                                line.contains("\t") -> "\t"
+                                line.contains(";") -> ";"
+                                line.contains(",") -> ","
+                                else -> "\\s+"
+                            }
+
+                            // Split limpiando espacios alrededor del delimitador
+                            val cols = line.split(Regex("\\s*$delimiter\\s*"))
+
+                            // Necesitamos al menos N°, Fecha, Hora, Temp|AMPM?, Hum  (mínimo 4 columnas según tu caso)
+                            if (cols.size >= 4) {
+                                try {
+                                    // Construir fecha/hora similar a la versión original
+                                    val maybeTime = cols.getOrNull(3)?.trim() ?: ""
+                                    val hasAmPm = maybeTime.contains("AM", true) || maybeTime.contains("PM", true)
+
+                                    val fechaHora = buildString {
+                                        append(cols.getOrNull(1)?.trim() ?: "")
+                                        append(" ")
+                                        append(cols.getOrNull(2)?.trim() ?: "")
+                                        if (hasAmPm) {
+                                            append(" ")
+                                            append(maybeTime)
+                                        }
+                                    }.trim()
+
+                                    // Determinar hasta qué índice corresponde la fecha/hora
+                                    val timeEndIndex = if (hasAmPm) 3 else 2
+
+                                    // Buscar valores numéricos **después** de timeEndIndex
+                                    // Normalizamos comas decimales a punto
+                                    val tokensAfterTime = cols
+                                        .drop(timeEndIndex + 1)
+                                        .map { it.trim() }
+                                        .filter { it.isNotEmpty() }
+
+                                    // Intentar tomar el primer número como temperatura y el siguiente como humedad
+                                    var tempValor: Double? = null
+                                    var humValor: Double? = null
+
+                                    for (token in tokensAfterTime) {
+                                        val normalized = token.replace(",", ".")
+                                        val num = normalized.toDoubleOrNull()
+                                        if (num != null) {
+                                            if (tempValor == null) {
+                                                tempValor = num
+                                            } else if (humValor == null) {
+                                                humValor = num
+                                                break
+                                            }
+                                        }
+                                    }
+
+                                    // Si no encontramos ambos, podemos intentar una segunda estrategia:
+                                    // - si hay exactamente 5 columnas, intentar usar indices 3 y 4 directamente
+                                    if ((tempValor == null || humValor == null) && cols.size >= 5) {
+                                        val tempTry = cols.getOrNull(3)?.trim()?.replace(",", ".")?.toDoubleOrNull()
+                                        val humTry = cols.getOrNull(4)?.trim()?.replace(",", ".")?.toDoubleOrNull()
+                                        if (tempValor == null) tempValor = tempTry
+                                        if (humValor == null) humValor = humTry
+                                    }
+
+                                    // Si aún falta alguno, intentar buscar cualquier número en la línea (último recurso)
+                                    if ((tempValor == null || humValor == null)) {
+                                        val allNums = cols.map { it.trim().replace(",", ".") }
+                                            .mapNotNull { it.toDoubleOrNull() }
+                                        if (allNums.size >= 2) {
+                                            if (tempValor == null) tempValor = allNums.getOrNull(0)
+                                            if (humValor == null) humValor = allNums.getOrNull(1)
+                                        }
+                                    }
+
+                                    // Debug: si tempValor coincide con el índice (cols[0]) avisar
+                                    val firstTokenNum = cols.getOrNull(0)?.trim()?.replace(",", ".")?.toDoubleOrNull()
+                                    if (tempValor != null && firstTokenNum != null && tempValor == firstTokenNum) {
+                                        println("⚠️ Línea $lineNumber: temperatura igual a N° (${firstTokenNum}) → posible parsing (línea: $line)")
+                                    }
+
+                                    // Finalmente insertar solo si tenemos al menos temperatura o humedad
+                                    // (si quieres exigir ambos, cambia la condición)
+                                    if (tempValor != null || humValor != null) {
+                                        selectedDispositivo?.dispositivoId?.let { dId ->
+                                            selectedSensor?.sensorId?.let { sId ->
+                                                lecturas.add(
+                                                    Lectura(
+                                                        dispositivoId = dId,
+                                                        sensorId = sId,
+                                                        fechahora = viewModel.convertirFechaCSV(fechaHora),
+                                                        temperatura = tempValor,
+                                                        humedad = humValor,
+                                                        calidad = 1
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        println("⚠️ Línea $lineNumber descartada: no se encontraron temp/hum numéricas -> $line")
+                                    }
+
+                                } catch (e: Exception) {
+                                    println("⚠️ Error parseando línea $lineNumber: $line → ${e.message}")
+                                }
+                            } else {
+                                println("⚠️ Línea $lineNumber ignorada (cols < 4): $line")
+                            }
+                        }
+                    }
+
+                    // Log de muestra para verificar
+                    lecturas.take(10).forEachIndexed { idx, l ->
+                        println("DEBUG Lectura[$idx] => temp=${l.temperatura}, hum=${l.humedad}, fecha=${l.fechahora}")
+                    }
+
+                    // Agregar lecturas al ViewModel (igual que antes)
+                    lecturas.forEach { viewModel.agregarLectura(it) }
+                    val count = lecturas.size
+                    viewModel.setUiMessage(
+                        if (count > 0) "✅ Se cargaron $count lecturas desde el archivo"
+                        else "⚠️ No se detectaron lecturas válidas"
+                    )
+
+                } catch (e: Exception) {
+                    viewModel.setUiMessage("⚠️ Error leyendo archivo: ${e.message}")
+                }
+            }
+        }
     )
+
 
     Box(
         modifier = Modifier
