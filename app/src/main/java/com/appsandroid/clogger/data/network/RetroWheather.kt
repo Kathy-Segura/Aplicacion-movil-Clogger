@@ -1,5 +1,6 @@
 package com.appsandroid.clogger.data.network
 
+import com.appsandroid.clogger.viewmodel.ReportesViewModelFactory
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -15,4 +16,9 @@ object RetroWheather {
     val api: WeatherApi by lazy {
         retrofit.create(WeatherApi::class.java)
     }
+
+    val reportesApi: ReportesApi by lazy {
+        retrofit.create(ReportesApi::class.java)
+    }
+
 }

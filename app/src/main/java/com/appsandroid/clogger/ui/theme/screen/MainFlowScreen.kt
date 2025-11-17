@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -40,19 +39,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.WorkManager
 import com.appsandroid.clogger.R
+import com.appsandroid.clogger.data.network.RetroWheather
+import com.appsandroid.clogger.data.repository.ReportesRepository
 import com.appsandroid.clogger.login.LoginScreen
 import com.appsandroid.clogger.login.RegisterScreen
-import com.appsandroid.clogger.utils.NotificationScheduler
 import com.appsandroid.clogger.viewmodel.ArchivosViewModel
 import com.appsandroid.clogger.viewmodel.NotificationViewModel
 import com.appsandroid.clogger.viewmodel.NotificationViewModelFactory
 import com.appsandroid.clogger.viewmodel.WeatherViewModel
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.tasks.await
-import com.appsandroid.clogger.login.SessionManager
+import com.appsandroid.clogger.utils.GenerarBoletinUseCase
+import com.appsandroid.clogger.viewmodel.ReportesViewModelFactory
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -167,8 +166,26 @@ fun MainFlowScreen() {
                     composable(BottomNavItem.Home.route) { HomeScreen() }
                     composable(BottomNavItem.Clima.route) { ClimaScreen() }
                     composable(BottomNavItem.Graficos.route) { GraficosScreen() }
-                    composable(BottomNavItem.Reportes.route) { ReportesScreen() }
+                    /**composable(BottomNavItem.Reportes.route) { ReportesScreen() }**/
                     composable(BottomNavItem.Mapas.route) { MapasScreen() }
+                    composable(BottomNavItem.Reportes.route) {
+                        val context = LocalContext.current
+
+                        // 1. Crear api normal
+                        val api = RetroWheather.reportesApi
+
+                        // 2. Crear el repositorio
+                        val repo = ReportesRepository(api)
+
+                        // 3. Crear el use case
+                        val useCase = GenerarBoletinUseCase(repo)
+
+                        // 4. Crear el factory
+                        val factory = ReportesViewModelFactory(useCase)
+
+                        // 5. Llamar el screen con el factory
+                        ReportesScreen(factory = factory)
+                    }
                 }
 
                 // Nivel 3: TopBar Overlay
