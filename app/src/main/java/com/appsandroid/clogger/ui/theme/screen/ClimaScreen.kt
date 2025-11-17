@@ -37,6 +37,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appsandroid.clogger.R
 import com.appsandroid.clogger.ui.theme.charts.WeatherLineChart
 import com.appsandroid.clogger.ui.theme.charts.WeeklyBarChart
+import com.appsandroid.clogger.ui.theme.charts.WeeklyRainRiskChart
+import com.appsandroid.clogger.ui.theme.charts.WeeklyTempLineChart
 import com.appsandroid.clogger.ui.theme.components.MetricCard
 import com.appsandroid.clogger.ui.theme.components.WeeklyForecastCard
 import com.appsandroid.clogger.utils.LocationHelper
@@ -206,9 +208,9 @@ fun ClimaScreen(
 
             Spacer(Modifier.height(28.dp))
 
-            // 🔹 WeeklyBarChart de lluvias
+            // 🔹 Temperatura semanal (línea doble)
             Text(
-                "Precipitación semanal",
+                "Tendencia de temperatura semanal",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.padding(horizontal = 16.dp),
                 color = Color(0xFF2D9DFB)
@@ -216,14 +218,33 @@ fun ClimaScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            WeeklyBarChart(
+            WeeklyTempLineChart(
                 daily = daily,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(280.dp)
                     .padding(horizontal = 16.dp)
             )
 
+            Spacer(Modifier.height(32.dp))
+
+            // 🔹Probabilidad de lluvia semanal
+            Text(
+                "Probabilidad de lluvia semanal",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = Color(0xFF2D9DFB)
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            WeeklyRainRiskChart(
+                daily = daily,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(340.dp)
+                    .padding(horizontal = 16.dp)
+            )
             // Spacer(Modifier.height(32.dp))
         }
     }

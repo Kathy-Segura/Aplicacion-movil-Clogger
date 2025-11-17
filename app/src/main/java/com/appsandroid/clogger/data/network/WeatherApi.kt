@@ -5,7 +5,7 @@ import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-interface WeatherApi {
+/*interface WeatherApi {
     @GET("forecast")
     suspend fun getWeather(
         @Query("latitude") lat: Double,
@@ -16,7 +16,17 @@ interface WeatherApi {
         @Query("timezone") timezone: String = "auto"
     ): WeatherResponse
 
-    //Ejemplo de Enpoint para cargar datos de la otra API
-    //@GET("/apiolap/cubedata")
-    //fun getBartChartData(): Call<List<BartChartData>>
+}*/
+
+interface WeatherApi {
+    @GET("forecast")
+    suspend fun getWeather(
+        @Query("latitude") lat: Double,
+        @Query("longitude") lon: Double,
+        @Query("hourly")
+        hourly: String = "temperature_2m,precipitation,relativehumidity_2m,weathercode,windspeed_10m",
+        @Query("daily") daily: String = "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset,windspeed_10m_max,precipitation_probability_max",
+        @Query("current_weather") current: Boolean = true,
+        @Query("timezone") timezone: String = "auto"
+    ): WeatherResponse
 }

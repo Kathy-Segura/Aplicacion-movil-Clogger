@@ -36,7 +36,9 @@ data class DailyResponse(
     val precipitation_sum: List<Double>?,
     val sunrise: List<String>?,                 // salida del sol
     val sunset: List<String>?,                  // puesta del sol
-    val windspeed_10m_max: List<Double>?        // viento máximo diario
+    val windspeed_10m_max: List<Double>?,        // viento máximo diario
+    val weathercode: List<Int>?,
+    val precipitation_probability_max: List<Int>?
 )
 
 data class WeatherNotification(
