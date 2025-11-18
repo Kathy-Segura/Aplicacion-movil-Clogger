@@ -317,11 +317,26 @@ fun GraficosScreen() {
             Text("Error: $errorMessage", color = Color.Red)
         } else {
             // Promedios y tarjetas: uso de tus componentes DashboardCard, IndicadorCircular
-            val temperaturaPromedio = viewModel.obtenerPromedio("Temperatura")
+            /*val temperaturaPromedio = viewModel.obtenerPromedio("Temperatura")
             val humedadPromedio = viewModel.obtenerPromedio("Humedad")
 
             DashboardCard(title = "Promedios Meteorológicos") {
                 Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+                    IndicadorCircular("Temperatura", temperaturaPromedio, "°C")
+                    IndicadorCircular("Humedad", humedadPromedio, "%")
+                }
+            }*/
+            //DEJARLO ESTATICO POR EL MOMENTO
+
+            DashboardCard(title = "Promedios Meteorológicos") {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Promedios estáticos
+                    val temperaturaPromedio = 22.5
+                    val humedadPromedio = 61.0
+
                     IndicadorCircular("Temperatura", temperaturaPromedio, "°C")
                     IndicadorCircular("Humedad", humedadPromedio, "%")
                 }

@@ -263,40 +263,6 @@ fun MapasScreen(viewModel: WeatherViewModel = WeatherViewModel(), navController:
                         }
                     }
 
-                    // Temperatura
-                    if (showTemp.value) {
-                        if (tempOverlay.value == null) {
-                            val src = object : OnlineTileSourceBase(
-                                "OWM-Temp",
-                                0, 19, 256, ".png",
-                                arrayOf("https://tile.openweathermap.org/map/temp_new/")
-                            ) {
-                                override fun getTileURLString(pMapTileIndex: Long): String {
-                                    val z = MapTileIndex.getZoom(pMapTileIndex)
-                                    val x = MapTileIndex.getX(pMapTileIndex)
-                                    val y = MapTileIndex.getY(pMapTileIndex)
-                                    return "$baseUrl$z/$x/$y.png?appid=$apiKey&opacity=3.0"
-                                }
-                            }
-                            val provider = MapTileProviderBasic(mapView.context)
-                            provider.tileSource = src
-                            val overlay = TilesOverlay(provider, mapView.context)
-                            overlay.setLoadingBackgroundColor(0x00000000)
-                            mapView.overlays.add(overlay)
-                            tempOverlay.value = overlay
-                            tempProvider.value = provider
-                        } else {
-                            tempProvider.value?.clearTileCache()
-                        }
-                    } else {
-                        tempOverlay.value?.let { overlay ->
-                            mapView.overlays.remove(overlay)
-                            tempOverlay.value = null
-                            tempProvider.value?.clearTileCache()
-                            tempProvider.value = null
-                        }
-                    }
-
                     // Reaplicar centro/zoom y refrescar
                     mapView.controller.setCenter(currentCenter)
                     mapView.controller.setZoom(currentZoom)
@@ -323,24 +289,6 @@ fun MapasScreen(viewModel: WeatherViewModel = WeatherViewModel(), navController:
             }
         }
 
-        // Botón para centrar el mapa en la ubicación del usuario
-        FloatingActionButton(
-            onClick = {
-                val mapView = mapViewState.value
-                val center = userLocation.value ?: defaultLocation
-                if (mapView != null) {
-                    mapView.controller.setZoom(18.0)
-                    mapView.controller.animateTo(center)
-                    // Opcionalmente, puedes guardar esta ubicación en el ViewModel
-                    // viewModel.setMapCenter(center.latitude, center.longitude)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(Icons.Filled.MyLocation, contentDescription = "Ir a mi ubicación")
-        }
         // Toggles de capas meteorológicas (arriba a la derecha)
         Row(
             modifier = Modifier
@@ -355,20 +303,6 @@ fun MapasScreen(viewModel: WeatherViewModel = WeatherViewModel(), navController:
                 backgroundColor = if (showPrecip.value) MaterialTheme.colors.secondary else MaterialTheme.colors.surface
             ) { Text("Lluvia") }
 
-            FloatingActionButton(
-                onClick = { showTemp.value = !showTemp.value },
-                backgroundColor = if (showTemp.value) MaterialTheme.colors.secondary else MaterialTheme.colors.surface
-            ) { Text("Temp") }
-        }
-        // Toggle: seguir mi ubicación
-        FloatingActionButton(
-            onClick = { isFollowing.value = !isFollowing.value },
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp),
-            backgroundColor = if (isFollowing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.surface
-        ) {
-            Icon(Icons.Filled.MyLocation, contentDescription = if (isFollowing.value) "Dejar de seguir" else "Seguir mi ubicación")
         }
 
         // Actualizaciones periódicas cuando 'seguir' está activo
