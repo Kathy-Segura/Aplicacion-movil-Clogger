@@ -351,33 +351,7 @@ class MainActivity : ComponentActivity() {
 
                     // --- NavHost solo visible cuando el splash terminó ---
                     if (!showSplash) {
-                        NavHost(navController = navController, startDestination = "login") {
-
-                            // --- LOGIN ---
-                            composable("login") {
-                                LoginScreen(
-                                    onLoginSuccess = {
-                                        navController.navigate("main") {
-                                            popUpTo("login") { inclusive = true }
-                                        }
-                                    },
-                                    onRegisterClick = {
-                                        navController.navigate("register")
-                                    }
-                                )
-                            }
-
-                            // --- REGISTER ---
-                            composable("register") {
-                                RegisterScreen(
-                                    onLoginClick = {
-                                        navController.navigate("login") {
-                                            popUpTo("register") { inclusive = true }
-                                        }
-                                    }
-                                )
-                            }
-
+                        NavHost(navController = navController, startDestination = "main") {
                             // --- MAIN ---
                             composable("main") {
                                 MainFlowScreen()
