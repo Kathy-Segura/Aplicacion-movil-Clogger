@@ -48,55 +48,89 @@ object PdfGenerator {
         var page = newPage(1)
         var canvas = page.canvas
 
+        fun checkPageSpace(extra: Int = 30) {
+            if (yPos > pageHeight - margin - extra) {
+                pdf.finishPage(page)
+                page = newPage(pdf.pages.size + 1)
+                canvas = page.canvas
+            }
+        }
+
         fun writeLine(text: String, paint: Paint, addGap: Boolean = true) {
             val lines = text.split("\n")
             for (line in lines) {
-                if (yPos > pageHeight - margin - 40) {
-                    pdf.finishPage(page)
-                    page = newPage(pdf.pages.size + 1)
-                    canvas = page.canvas
-                }
+                checkPageSpace()
                 canvas.drawText(line, margin.toFloat(), yPos.toFloat(), paint)
                 yPos += (paint.textSize + 8).toInt()
             }
             if (addGap) yPos += 6
         }
 
-        // Header
+        /* ---------------------- HEADER ---------------------- */
         writeLine("BOLETÍN AGROCLIMÁTICO", titlePaint)
         writeLine("Zona: ${boletin.zona}", headerPaint)
         writeLine("Fecha de generación: ${boletin.fechaGeneracion}", headerPaint)
         yPos += 6
 
-        // Resumen
+        /* ---------------------- RESUMEN ---------------------- */
         writeLine("--- RESUMEN CLIMÁTICO ---", headerPaint)
         writeLine(boletin.resumenClimatico, normalPaint)
 
+        /* ---------------------- RECOMENDACIONES ---------------------- */
         writeLine("--- RECOMENDACIONES ---", headerPaint)
         writeLine("Café: ${boletin.recomendacionesCafe}", normalPaint)
         writeLine("Jamaica: ${boletin.recomendacionesJamaica}", normalPaint)
         writeLine("Hortalizas: ${boletin.recomendacionesHortalizas}", normalPaint)
 
-        // Tabla diaria
+        /* ---------------------- TABLA RESUMEN DIARIO ---------------------- */
         if (dias.isNotEmpty()) {
             writeLine("--- RESUMEN DIARIO ---", headerPaint)
-            writeLine("Fecha    Tmin    Tmax    Precip (mm)", normalPaint)
+            yPos += 8
 
-            dias.forEach { d ->
-                val line = "${d.date}    ${d.tMin?.let { "%.1f".format(it) } ?: "N/D"}    ${d.tMax?.let { "%.1f".format(it) } ?: "N/D"}    ${d.precip?.let { "%.1f".format(it) } ?: "0.0"}"
-                writeLine(line, normalPaint)
+            // Anchuras de columnas
+            val colDate = margin + 0
+            val colMin  = margin + 130
+            val colMax  = margin + 220
+            val colRain = margin + 310
+
+            // Encabezados
+            checkPageSpace()
+            canvas.drawText("Fecha", colDate.toFloat(), yPos.toFloat(), headerPaint)
+            canvas.drawText("Min °C", colMin.toFloat(), yPos.toFloat(), headerPaint)
+            canvas.drawText("Max °C", colMax.toFloat(), yPos.toFloat(), headerPaint)
+            canvas.drawText("Precip", colRain.toFloat(), yPos.toFloat(), headerPaint)
+            yPos += 22
+
+            // Filas
+            dias.forEachIndexed { index, d ->
+                checkPageSpace()
+
+                val tmin = d.tMin?.let { "%.1f".format(it) } ?: "N/D"
+                val tmax = d.tMax?.let { "%.1f".format(it) } ?: "N/D"
+                val pr   = d.precip?.let { "%.1f".format(it) } ?: "0.0"
+
+                canvas.drawText(d.date, colDate.toFloat(), yPos.toFloat(), normalPaint)
+                canvas.drawText(tmin, colMin.toFloat(), yPos.toFloat(), normalPaint)
+                canvas.drawText(tmax, colMax.toFloat(), yPos.toFloat(), normalPaint)
+                canvas.drawText(pr, colRain.toFloat(), yPos.toFloat(), normalPaint)
+
+                yPos += 18
             }
+
+            yPos += 10
         }
 
-        // Footer / página final
+        /* ---------------------- FOOTER ---------------------- */
         pdf.finishPage(page)
 
-        // Guardado en directorio app-visible
+        // Guardar
         val dir = File(context.getExternalFilesDir("pdfs"), "")
         if (!dir.exists()) dir.mkdirs()
         val file = File(dir, "boletin_${boletin.zona}_${System.currentTimeMillis()}.pdf")
+
         pdf.writeTo(FileOutputStream(file))
         pdf.close()
+
         return file
     }
 }
