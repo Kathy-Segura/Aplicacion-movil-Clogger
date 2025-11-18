@@ -198,5 +198,9 @@ dependencies {
 
 // WorkManager para tareas programadas o periódicas
     implementation("androidx.work:work-runtime-ktx:2.8.1")
+
+// Helper para notificaciones programadas
+// Forzar la nueva version de la lib que sea compatible con el SDK
+    implementation("androidx.fragment:fragment-ktx:1.8.0")
 }
 // ==========================================================================================

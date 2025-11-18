@@ -85,7 +85,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import android.Manifest
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
@@ -308,17 +311,34 @@ import kotlinx.coroutines.tasks.await
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var notifLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 🔹 Pedir permiso de notificaciones
-        NotificationPermissionHelper.requestNotificationPermission(this)
+        // 🔹 Registrar launcher del permiso (obligatorio en Activity para evitar error de Fragment)
+        notifLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (!isGranted) {
+                Toast.makeText(
+                    this,
+                    "Las notificaciones están deshabilitadas",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        // 🔹 Pedir permiso de notificaciones usando el launcher registrado
+        NotificationPermissionHelper.requestNotificationPermission(
+            this,
+            notifLauncher
+        )
 
         // 🔹 Inicializar FusedLocationProviderClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // 🔹 Obtener ubicación al abrir la app (opcional, para log/debug)
+        // 🔹 Obtener ubicación al abrir la app
         lifecycleScope.launch {
             val location = getCurrentLocation()
             if (location != null) {
@@ -334,7 +354,6 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 var showSplash by rememberSaveable { mutableStateOf(true) }
 
-                // 🔹 Programar notificaciones diarias globales
                 LaunchedEffect(Unit) {
                     NotificationScheduler.scheduleDailyNotifications(context)
                 }

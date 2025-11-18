@@ -4,10 +4,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 
-object NotificationPermissionHelper {
+/*object NotificationPermissionHelper {
 
     fun requestNotificationPermission(activity: ComponentActivity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -22,6 +23,36 @@ object NotificationPermissionHelper {
                     ).show()
                 }
             }
+
+            when {
+                ContextCompat.checkSelfPermission(
+                    activity,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permiso ya concedido
+                }
+                activity.shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS) -> {
+                    Toast.makeText(
+                        activity,
+                        "Activa las notificaciones para recibir alertas del clima",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                else -> {
+                    launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+    }
+}*/
+
+object NotificationPermissionHelper {
+
+    fun requestNotificationPermission(
+        activity: ComponentActivity,
+        launcher: ActivityResultLauncher<String>
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 
             when {
                 ContextCompat.checkSelfPermission(
